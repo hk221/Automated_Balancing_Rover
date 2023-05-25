@@ -1,3 +1,5 @@
+Note: Run "npm install" on the server in order to install the required node.js module dependencies defined in the package json files.    
+    
     Maze drawing approach:
     
     Discretize the Maze: Divide the maze into a grid of cells. The size of the cells will depend on the smallest gap size in the maze and the precision of the rover's sensors. Each cell represents a small area of the maze.
