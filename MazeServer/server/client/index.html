@@ -3,16 +3,29 @@
   <head>
     <title>S.P.E.D Mapper</title>
   <link rel = "stylesheet" href = "/client/assets/style.css">
+
   </head>
 <body>
+
 
 <br>
 <div id = "canvas-container">
 <canvas id="ctx"></canvas>
 </div>
+<div><h3 id = "demotag">Demo Buttons</h3></div>
+<div id = "button-container">
+  
+<button class = "button" onclick="moveBug(40, 40)">MoveBug</button>
+<button class= "button" onclick = "rotateBugRelative(10)">Rotate Clockwise</button>
+<button class= "button" onclick = "rotateBugRelative(-10)">Rotate AntiClockwise</button>
+</div>
+
+
 
 
 <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+
+
 
 <script type ="text/javascript" src="/client/assets/maze.js"></script>
 

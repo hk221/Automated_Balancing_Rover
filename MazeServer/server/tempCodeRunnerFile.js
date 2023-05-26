@@ -31,9 +31,10 @@ io.on("connection", function(socket) {
     console.log("Client said hello");
   });
 
-  socket.on("serverUpdateCoordsAbs", function(data){
-
-    io.sockets.emit("clientUpdateCoordsAbs", {x: data.x, y: data.y});
+  socket.on("update", function(data){
+    x = data.x;
+    y = data.y;
+    io.sockets.emit("update", {x: x, y: y});
   });
 
   // Listen for socket disconnect
