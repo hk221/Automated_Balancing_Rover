@@ -42,3 +42,16 @@ final_img = cv2.resize(final_img, (1000,650))
 # Show the final image
 cv2.imshow("Matches", final_img)
 cv2.waitKey(3000)
+
+#homography
+
+# Extract location of good matches
+#points1 = np.zeros((len(matches), 2), dtype=np.float32)
+#points2 = np.zeros((len(matches), 2), dtype=np.float32)
+#
+#for i, match in enumerate(matches):
+#  points1[i, :] = keypoints1[match.queryIdx].pt
+#  points2[i, :] = keypoints2[match.trainIdx].pt
+#  
+## Find homography
+#h, mask = cv2.findHomography(points2, points1, cv2.RANSAC)
