@@ -8,6 +8,16 @@ var c = canvas.getContext("2d");
 var bugWidth, bugHeight, mm, bugX, bugY, bugAngle, numCellsY, numCellsX, cellSize;
 let mazeMatrix = [];
 
+class prevPos {
+  constructor(X, Y, Angle){
+    this.X = X;
+    this.Y = Y;
+    this.angle = Angle;
+  }
+}
+let prevPosLog = [];
+
+
 
 
 function screenSize(){
@@ -67,6 +77,12 @@ screenSize();
 
 //Update the canvas dimensions on window resize
 window.addEventListener("resize", function(){screenSize()});
+window.onload = function() {
+  // Your code here
+  if (prevPosLog.length == 0){
+    socket.emit("requestTrail");
+  }
+};
 //----------------------------------------//
 
 // Discretize Maze
@@ -112,7 +128,13 @@ function drawBug(X, Y, angle, colour="red", clear=0) {
 function moveBugRelative(dx, dy) {
   // Clear the bug's current position.
   //c.fillRect(bugX-1, bugY-1, bugWidth+2, bugWidth+2); //slightly incremented due to browser anti-aliasing
-  drawBug(bugX, bugY, bugAngle, "blue", 2);
+  var oldPos = new prevPos(bugX, bugY, bugAngle);
+  socket.emit("addPos", {Pos: oldPos});
+  prevPosLog.push(oldPos);
+  prevPosLog.forEach(prevPos => {
+    drawBug(prevPos.X, prevPos.Y, prevPos.Angle, "blue", 2);
+  })
+  
 
   // Update the bug's position.
   bugX += dx * mm;
@@ -126,7 +148,14 @@ function moveBugRelative(dx, dy) {
 
 function moveBugAbsolute(X, Y){
   //clear bug
-  drawBug(bugX, bugY, bugAngle, "blue", 2);
+  
+  var oldPos = new prevPos(bugX, bugY, bugAngle);
+  socket.emit("addPos", {Pos: oldPos});
+  prevPosLog.push(oldPos);
+  prevPosLog.forEach(prevPos => {
+    drawBug(prevPos.X, prevPos.Y, prevPos.Angle, "blue", 2);
+  })
+
   bugX = X * mm;
   bugY = Y*mm;
   drawBug(bugX, bugY, bugAngle);
@@ -134,7 +163,13 @@ function moveBugAbsolute(X, Y){
 
 function rotateBugAbsolute(angle){
   //clear bug
-  drawBug(bugX, bugY, bugAngle, "blue", 2)
+  var oldPos = new prevPos(bugX, bugY, bugAngle);
+  prevPosLog.push(oldPos);
+  prevPosLog.forEach(prevPos => {
+    drawBug(prevPos.X, prevPos.Y, prevPos.Angle, "blue", 2);
+  })
+
+  
   bugAngle += angle*Math.PI/180;
   drawBug(bugX, bugY, bugAngle);
 }
@@ -150,6 +185,16 @@ function rotateBugRelative(angle){
 socket.on("clientUpdateCoordsAbs", function(data){
   moveBugAbsolute(data.x, data.y);
 });
+
+socket.on("clientUpdateRotate", function(data){
+  rotateBugRelative(data.angle);
+});
+
+socket.on("prevPosLog", function(data){
+  prevPosLog = data.prevPosLog;
+});
+
+
 
 // function locationUpdate(){
 //   socket.emit("location");

@@ -10,6 +10,15 @@ var socket_list = {};
 var x = 0;
 var y = 0;
 
+class prevPos {
+  constructor(X, Y, Angle){
+    this.X = X;
+    this.Y = Y;
+    this.angle = Angle;
+  }
+}
+let prevPosLog = [];
+
 // Configure bodyParser middleware
 server.use(express.json());
 server.use(express.urlencoded({ extended: true }));
@@ -26,14 +35,23 @@ io.on("connection", function(socket) {
   // Append to connection list
   socket_list[socket.id] = socket;
 
-  // Handle "hi server" request from client
-  socket.on("hi server", function() {
-    console.log("Client said hello");
+  
+  socket.on("serverUpdateRotate", function(data){
+
+    io.sockets.emit("clientUpdateRotate", {angle: data.angle});
   });
 
   socket.on("serverUpdateCoordsAbs", function(data){
 
     io.sockets.emit("clientUpdateCoordsAbs", {x: data.x, y: data.y});
+  });
+
+  socket.on("requestTrail", function(){
+    socket.emit("prevPosLog", {prevPosLog:prevPosLog});
+  });
+    
+  socket.on("addPos", function(data){
+    prevPosLog.push(data.Pos);
   });
 
   // Listen for socket disconnect
