@@ -5,7 +5,7 @@ var c = canvas.getContext("2d");
 // Set dimensions based on the window size
 
 
-var bugWidth, bugHeight, mm, bugX, bugY, bugAngle, numCellsY, numCellsX, cellSize;
+var bugWidth, bugHeight, mm, bugX, bugY, bugAngle, numCellsY, numCellsX, cellSize, wallWidth, wallHeight, sentWalls
 let mazeMatrix = [];
 
 class prevPos {
@@ -15,9 +15,19 @@ class prevPos {
     this.Angle = Angle;
   }
 }
+
+
+class Wall {
+  constructor(X, Y, Width, Height){
+    this.X = X;
+    this.Y = Y;
+    this.Width = wallWidth;
+    this.Height = wallHeight;
+  }
+}
+
 let prevPosLog = [];
-
-
+let Walls = [];
 
 
 function screenSize(){
@@ -74,6 +84,24 @@ function screenSize(){
 
 screenSize();
 
+function updateWalls(){
+  if (Walls.length == 0){
+    socket.emit("getWalls", function(){});
+  }
+}
+
+
+setInterval(updateWalls, 700);
+window.onload = updateWalls;
+function givenWalls(walls){
+  var wallsLog = walls;
+  c.fillStyle = "green";
+  wallsLog.forEach(wall => {
+    
+    c.fillRect(wall.X, wall.Y, wall.Width, wall.Height);
+  }
+  );
+}
 
 //Update the canvas dimensions on window resize
 window.addEventListener("resize", function(){screenSize()});
@@ -209,13 +237,18 @@ function drawWall(direction){
   var midpointX = bugX + bugWidth/2;
   var midpointY = bugY + bugHeight/2;
   var wallDistance = 0.8*bugWidth;
-  var wallWidth = 40*mm;
-  var wallHeight = 50*mm;
+  wallWidth = 40*mm;
+  wallHeight = 50*mm;
+  if (sentWalls != 1){
+  socket.emit("wallSize", {width: wallWidth, height: wallHeight})};
   var wallX = midpointX + wallDistance * Math.cos(angle)-wallWidth/2;
   var wallY = midpointY + wallDistance * Math.sin(angle)-wallHeight/2;
   c.fillStyle = "green";
 
   c.fillRect(wallX, wallY, wallWidth, wallHeight);
+  var newWall = new Wall(wallX, wallY, wallWidth, wallHeight);
+  Walls.push(newWall);
+  socket.emit("newWall", {Wall: newWall});
   console.log("added wall");
 }
 
@@ -263,6 +296,10 @@ socket.on("prevPosLog", function(data){
 
 socket.on("moveRelDirection", function(data){
   MoveRelDirection(data.direction, data.distance);
+});
+
+socket.on("giveWalls", function(data){
+  givenWalls(data.walls);
 });
 
 

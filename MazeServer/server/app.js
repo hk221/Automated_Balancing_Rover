@@ -17,7 +17,18 @@ class prevPos {
     this.angle = Angle;
   }
 }
+
+class Wall {
+  constructor(X, Y, Width, Height){
+    this.X = X;
+    this.Y = Y;
+    this.Width = wallWidth;
+    this.Height = wallHeight;
+  }
+}
 let prevPosLog = [];
+let Walls = [];
+
 
 // Configure bodyParser middleware
 server.use(express.json());
@@ -54,13 +65,24 @@ io.on("connection", function(socket) {
   socket.on("requestTrail", function(){
     socket.emit("prevPosLog", {prevPosLog:prevPosLog});
   });
+
+  socket.on("wallSize", function(data){
+    wallWidth = data.width;
+    wallHeight = data.height;
+  })
     
   socket.on("addPos", function(data){
     prevPosLog.push(data.Pos);
   });
 
 
- 
+ socket.on("getWalls", function(){
+  socket.emit("giveWalls", {walls: Walls});
+ });
+
+ socket.on("newWall", function(data){
+  Walls.push(data.Wall)
+ });
 
   // Listen for socket disconnect
   socket.on("disconnect", function() {
