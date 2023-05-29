@@ -12,7 +12,7 @@ class prevPos {
   constructor(X, Y, Angle){
     this.X = X;
     this.Y = Y;
-    this.angle = Angle;
+    this.Angle = Angle;
   }
 }
 let prevPosLog = [];
@@ -162,22 +162,89 @@ function moveBugAbsolute(X, Y){
 }
 
 function rotateBugAbsolute(angle){
-  //clear bug
+  //clear canvas
+
+
   var oldPos = new prevPos(bugX, bugY, bugAngle);
   prevPosLog.push(oldPos);
   prevPosLog.forEach(prevPos => {
     drawBug(prevPos.X, prevPos.Y, prevPos.Angle, "blue", 2);
-  })
+  });
 
   
-  bugAngle += angle*Math.PI/180;
+  bugAngle = angle*Math.PI/180;
   drawBug(bugX, bugY, bugAngle);
 }
 
 function rotateBugRelative(angle){
-    var newAngle = angle+bugAngle*180/Math.PI;
-    rotateBugAbsolute(bugAngle+angle);
+  var newAngle = angle + bugAngle*180/Math.PI;
+  rotateBugAbsolute(newAngle);
+  
 }
+
+function MoveRelDirection(direction, distance){
+  var angle = getAngle(direction);
+  // var midpointX = bugX + bugWidth/2;
+  // var midpointY = bugY + bugHeight/2;
+  var nextX = bugX + distance*mm * Math.cos(angle);
+  var nextY = bugY + distance*mm * Math.sin(angle);
+  console.log(bugY);
+  console.log(nextY);
+  var oldPos = new prevPos(bugX, bugY, bugAngle);
+  socket.emit("addPos", {Pos: oldPos});
+  prevPosLog.push(oldPos);
+  prevPosLog.forEach(prevPos => {
+    drawBug(prevPos.X, prevPos.Y, prevPos.Angle, "blue", 2);
+  })
+  
+  bugX = nextX;
+  bugY = nextY;
+  
+  drawBug(bugX, bugY, bugAngle);
+
+}
+
+function drawWall(direction){
+  var angle = getAngle(direction);
+  var midpointX = bugX + bugWidth/2;
+  var midpointY = bugY + bugHeight/2;
+  var wallDistance = 0.8*bugWidth;
+  var wallWidth = 40*mm;
+  var wallHeight = 50*mm;
+  var wallX = midpointX + wallDistance * Math.cos(angle)-wallWidth/2;
+  var wallY = midpointY + wallDistance * Math.sin(angle)-wallHeight/2;
+  c.fillStyle = "green";
+
+  c.fillRect(wallX, wallY, wallWidth, wallHeight);
+  console.log("added wall");
+}
+
+function getAngle(direction){
+  if (direction === "left"){
+    return (bugAngle-Math.PI/2);
+  }
+  else if (direction === "right"){
+    return (bugAngle+Math.PI/2);
+  }
+  else if (direction === "front"){
+    return (bugAngle);
+  }
+  else if (direction === "forward"){
+    return (bugAngle);
+  }
+  else if (direction === "behind"){
+    return (bugAngle+Math.PI);
+  }
+
+  else if (direction === "back"){
+    return(bugAngle+Math.PI);
+  }
+  else {
+    console.log("Direction Unrecognised");
+  }
+}
+
+
 
 
 
@@ -194,9 +261,18 @@ socket.on("prevPosLog", function(data){
   prevPosLog = data.prevPosLog;
 });
 
+socket.on("moveRelDirection", function(data){
+  MoveRelDirection(data.direction, data.distance);
+});
 
 
-// function locationUpdate(){
-//   socket.emit("location");
-// }
+
+
+
+// socket.on("moveRelative", function(data){
+//   var direction = data.direction;
+//   var distance = data.distance;
+//   MoveRelDirection(direction, distance);
+// });
+
 

@@ -13,11 +13,21 @@
 <canvas id="ctx"></canvas>
 </div>
 <div><h3 id = "demotag">Demo Buttons</h3></div>
-<div id = "button-container">
-  
-<button class = "button" onclick="moveBugRelative(40, 40)">MoveBug</button>
+<div class = "button-container">
+<button class = "button" onclick="MoveRelDirection('left', 40)">MoveLeft</button>
+<button class = "button" onclick="MoveRelDirection('right', 40)">MoveRight</button>
+<button class = "button" onclick="MoveRelDirection('forward', 40)">MoveForward</button>
+<button class = "button" onclick="MoveRelDirection('back', 40)">MoveBack</button>
+</div>
+<div class = "button-container">
 <button class= "button" onclick = "rotateBugRelative(10)">Rotate Clockwise</button>
 <button class= "button" onclick = "rotateBugRelative(-10)">Rotate AntiClockwise</button>
+</div>
+<div class = "button-container">
+<button class ="button" onclick='drawWall("front")'>Add Wall Front</button>
+<button class ="button" onclick='drawWall("right")'>Add Wall Right</button>
+<button class ="button" onclick='drawWall("behind")'>Add Wall Behind</button>
+<button class ="button" onclick='drawWall("left")'>Add Wall Left</button>
 </div>
 
 

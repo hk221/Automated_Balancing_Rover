@@ -46,6 +46,11 @@ io.on("connection", function(socket) {
     io.sockets.emit("clientUpdateCoordsAbs", {x: data.x, y: data.y});
   });
 
+  socket.on("moveRelDirection", function(data){
+
+    io.sockets.emit("moveRelDirection", {direction: data.direction, distance: data.distance});
+  });
+
   socket.on("requestTrail", function(){
     socket.emit("prevPosLog", {prevPosLog:prevPosLog});
   });
@@ -53,6 +58,9 @@ io.on("connection", function(socket) {
   socket.on("addPos", function(data){
     prevPosLog.push(data.Pos);
   });
+
+
+ 
 
   // Listen for socket disconnect
   socket.on("disconnect", function() {

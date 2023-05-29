@@ -1,5 +1,6 @@
 #Script to simulate requests to the server from arduino 
 
+
 import socketio
 import time, msvcrt, sys
 
@@ -18,19 +19,21 @@ def UpdateCoords(x, y):
     sio.emit("serverUpdateCoordsAbs", {"x": x, "y": y})
 
 @sio.event
+def sendRotate(angle):
+    sio.emit("serverUpdateRotate", {"angle": angle})
+
 def testRotateBug():
     
-    for i in range(0, 360):
-        print ("Rotating by "+str(i))
-        sio.emit("serverUpdateRotate", {"angle": i})
-        time.sleep(0.2)
+    for i in range(0, 12):
+
+        sendRotate(30)
+        time.sleep(0.4)
 
         if msvcrt.kbhit() and ord(msvcrt.getch()) == 13:
             print("Script stopped by user.")
             sio.disconnect()
             sys.exit()
-        sio.disconnect()
-        sys.exit()
+
 
 @sio.event
 def disconnect():
@@ -51,11 +54,38 @@ def testMoveBug():
             print("Script stopped by user.")
             sio.disconnect()
             sys.exit()
-    sio.disconnect()
-    sys.exit()
+
+
+@sio.event
+def sendMoveRel(direction, distance):
+    sio.emit("moveRelDirection", {"direction": direction, "distance": distance})
+
+def testMoveRelBug():
+    for i in range(1, 50):
+        sendMoveRel("forward", 30)
+        time.sleep(0.1)
+    for i in range(1, 50):
+        sendMoveRel("right", 30)
+        time.sleep(0.1)
+    for i in range(1, 50):
+        sendMoveRel("back", 30)
+        time.sleep(0.1)
+    for i in range(1, 50):
+        sendMoveRel("left", 30)
+        time.sleep(0.1)
+
+
+    if msvcrt.kbhit() and ord(msvcrt.getch()) == 13:
+        print("Script stopped by user.")
+        sio.disconnect()
+        sys.exit()
+
+
             
-testMoveBug()
-# testRotateBug()
+# testMoveBug()
+testRotateBug()
+testMoveRelBug()
 
 disconnect()
+sio.disconnect()
 sys.exit()
