@@ -13,7 +13,8 @@ using namespace std;
 using namespace gtsam;
 
 // Step 1: Define Data Structures
-
+sudo make install
+ 
 // Define a graph to hold the nodes and edges
 NonlinearFactorGraph graph;
 // Create a values container to hold the initial estimates of poses and landmarks
