@@ -1,5 +1,21 @@
 import numpy as np
 import gtsam
+import math
+#calculate average distnace 
+
+def calculate_distance(point1, point2):
+    x1, y1 = point1
+    x2, y2 = point2
+    distance = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+    return distance
+
+def average_distance(point1, point2):
+    total_distance = 0
+    for i in range(len(point1)):
+        distance = calculate_distance(point1[i], point2[i])
+        total_distance += distance
+    average = total_distance / len(point1)
+    return average
 
 # Step 1: Define Data Structures
 
