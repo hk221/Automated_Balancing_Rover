@@ -2,7 +2,7 @@ import numpy as np
 import gtsam
 import math
 #calculate average distnace 
-
+#open camera and ldr files then average distance (camera_coordinates,ldr_coordinates)
 def calculate_distance(point1, point2):
     x1, y1 = point1
     x2, y2 = point2
@@ -23,7 +23,7 @@ def average_distance(point1, point2):
 graph = gtsam.NonlinearFactorGraph()
 # Create a values container to hold the initial estimates of poses and landmarks
 initial_estimates = gtsam.Values()
-
+#define landmark_pose_index
 # Step 2: Graph Construction
 def create_graph(poses, landmarks):
     # Add factors for pose constraints (e.g., odometry or motion model)
