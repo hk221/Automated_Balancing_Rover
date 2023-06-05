@@ -88,20 +88,30 @@ assign blue_detect = ~red[7] & ~green[7] & blue[7];
 wire yellow_detect;
 assign yellow_detect = red[7] & green[7] & ~blue[7];
 
+// Detect white areas
+wire white_detect;
+assign white_detect = red[7] & green[7] & blue[7];
+
+// Detect black areas
+wire black_detect;
+assign black_detect = ~(red_detect | blue_detect | yellow_detect | white_detect);
+
 // Find boundary of cursor box
 
 // Highlight detected areas
-wire [23:0] red_high, blue_high, yellow_high;
+wire [23:0] red_high, blue_high, yellow_high, white_high, black_high;
 assign grey = green[7:1] + red[7:2] + blue[7:2]; //Grey = green/2 + red/4 + blue/4
 assign red_high  =  red_detect ? {8'hff, 8'h0, 8'h0} : {grey, grey, grey};
 assign blue_high =  blue_detect ? {8'h00, 8'h00, 8'hff} : {grey, grey, grey};
 assign yellow_high = yellow_detect ? {8'hff, 8'hff, 8'h0} : {grey, grey, grey};
+assign white_high = white_detect ? {8'hff, 8'hff, 8'hff} : {grey, grey, grey};
+assign black_high = black_detect ? {8'h0, 8'h0, 8'h0} : {grey, grey, grey};
 
 // Show bounding box
 wire [23:0] new_image;
 wire bb_active;
 assign bb_active = (x == left) | (x == right) | (y == top) | (y == bottom);
-assign new_image = bb_active ? bb_col : (red_detect ? red_high : (blue_detect ? blue_high : yellow_high));
+assign new_image = bb_active ? bb_col : (red_detect ? red_high : (blue_detect ? blue_high : (yellow_detect ? yellow_high : (white_detect ? white_high : black_high))));
 
 // Switch output pixels depending on mode switch
 // Don't modify the start-of-packet word - it's a packet descriptor
@@ -144,6 +154,18 @@ always@(posedge clk) begin
 		y_max <= y;
 	end
 	if (yellow_detect & in_valid) begin	//Update bounds when the pixel is yellow
+		if (x < x_min) x_min <= x;
+		if (x > x_max) x_max <= x;
+		if (y < y_min) y_min <= y;
+		y_max <= y;
+	end
+	if (white_detect & in_valid) begin	//Update bounds when the pixel is white
+		if (x < x_min) x_min <= x;
+		if (x > x_max) x_max <= x;
+		if (y < y_min) y_min <= y;
+		y_max <= y;
+	end
+	if (black_detect & in_valid) begin	//Update bounds when the pixel is black
 		if (x < x_min) x_min <= x;
 		if (x > x_max) x_max <= x;
 		if (y < y_min) y_min <= y;
