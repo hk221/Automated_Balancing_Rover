@@ -1,44 +1,44 @@
 module GraphSLAM (
-      input xADC_CLK_10,
-      input ARDUINO_IO_15,
-      input ARDUINO_IO_14,
-      input ARDUINO_IO_13,
-      input ARDUINO_IO_12,
-      input ARDUINO_IO_11,
-      input ARDUINO_IO_10,
-      input ARDUINO_IO_9,
-      input ARDUINO_IO_8,
-      input ARDUINO_IO_7,
-      input ARDUINO_IO_6,
-      input ARDUINO_IO_5,
-      input ARDUINO_IO_4,
-      input ARDUINO_IO_3,
-      input ARDUINO_IO_2,
-      input ARDUINO_IO_1,
-      input ARDUINO_IO_0,
-      input ARDUINO_RESET_N,
-      input CAMERA_I2C_SCL,
-      input CAMERA_I2C_SDA,
-      output CAMERA_PWDN_n,
-      output [12:0] DRAM_ADDR,
-      output [1:0] DRAM_BA,
-      output DRAM_CAS_N,
-      output DRAM_CKE,
-      output DRAM_CLK,
-      output DRAM_CS_N,
-      inout [15:0] DRAM_DQ,
-      output DRAM_LDQM,
-      output DRAM_RAS_N,
-      output DRAM_UDQM,
-      output DRAM_WE_N,
-      output GSENSOR_CS_N,
-      input [2:0] GSENSOR_INT,
-      output GSENSOR_SCLK,
-      inout GSENSOR_SDI,
-      inout GSENSOR_SDO,
-      output [7:0] HEX0,
-      output [7:0] HEX1,
-// Other module ports...
+  input xADC_CLK_10,
+  input ARDUINO_IO_15,
+  input ARDUINO_IO_14,
+  input ARDUINO_IO_13,
+  input ARDUINO_IO_12,
+  input ARDUINO_IO_11,
+  input ARDUINO_IO_10,
+  input ARDUINO_IO_9,
+  input ARDUINO_IO_8,
+  input ARDUINO_IO_7,
+  input ARDUINO_IO_6,
+  input ARDUINO_IO_5,
+  input ARDUINO_IO_4,
+  input ARDUINO_IO_3,
+  input ARDUINO_IO_2,
+  input ARDUINO_IO_1,
+  input ARDUINO_IO_0,
+  input ARDUINO_RESET_N,
+  input CAMERA_I2C_SCL,
+  input CAMERA_I2C_SDA,
+  output CAMERA_PWDN_n,
+  output [12:0] DRAM_ADDR,
+  output [1:0] DRAM_BA,
+  output DRAM_CAS_N,
+  output DRAM_CKE,
+  output DRAM_CLK,
+  output DRAM_CS_N,
+  inout [15:0] DRAM_DQ,
+  output DRAM_LDQM,
+  output DRAM_RAS_N,
+  output DRAM_UDQM,
+  output DRAM_WE_N,
+  output GSENSOR_CS_N,
+  input [2:0] GSENSOR_INT,
+  output GSENSOR_SCLK,
+  inout GSENSOR_SDI,
+  inout GSENSOR_SDO,
+  output [7:0] HEX0,
+  output [7:0] HEX1,
+  // Other module ports...
 );
 
   // Assign the pin names to signals or variables
@@ -103,6 +103,13 @@ module GraphSLAM (
   reg [7:0] memory_data;
   // ...
 
+  // Declare additional signals for rover movement control
+  reg rover_forward;
+  reg rover_backward;
+  reg rover_left;
+  reg rover_right;
+  reg [2:0] rover_speed;
+
   // Add logic for synchronization and timing constraints
   // ...
 
@@ -110,8 +117,8 @@ module GraphSLAM (
   always @(posedge clk or posedge reset) begin
     if (reset) begin
       // Reset internal registers and memories
-      vertex_data <= (8'h0);
-      edge_data <= (8'h0);                      
+      vertex_data <= 8'h0;
+      edge_data <= 8'h0;
       state <= STATE_IDLE;
       // ...
     end else begin
@@ -122,6 +129,7 @@ module GraphSLAM (
           if (start_trigger) begin
             state <= STATE_READ_VERTEX;
             memory_addr <= 8'h00;
+            //Hex[7:0] = 8'b0000;
           end
         end
 
@@ -130,6 +138,20 @@ module GraphSLAM (
           memory_data <= read_memory(memory_addr);
           vertex_data[memory_addr] <= memory_data;
           memory_addr <= memory_addr + 1;
+
+          // Determine rover movement based on vertex data
+          case (memory_data)
+            // Example case: If vertex data is 1, move rover forward at high speed
+            8'h01: begin
+              rover_forward <= 1;
+              rover_backward <= 0;
+              rover_left <= 1;
+              rover_right <= 0;
+              //rover_speed <= 3'b111;  // Set speed to maximum
+            end
+            // Add more cases for different movement scenarios based on vertex data
+            // ...
+          endcase;
 
           if (memory_addr == 8'hFF) begin
             state <= STATE_READ_EDGE;
