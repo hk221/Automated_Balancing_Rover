@@ -28,3 +28,32 @@ def triangulate(reference_points, distances):
     return x, y
 
 
+#/////////////////////////////////////////////////////////////////
+import gtsam
+import numpy as np
+from gtsam import Pose3, Rot3, Point3
+
+# Define parameters for 2 cameras, with shared intrinsics.
+pose1 = Pose3()
+pose2 = Pose3(Rot3(), Point3(5., 0., -5.))
+intrinsics = gtsam.Cal3_S2()
+camera1 = gtsam.PinholeCameraCal3_S2(pose1, intrinsics)
+camera2 = gtsam.PinholeCameraCal3_S2(pose2, intrinsics)
+cameras = gtsam.CameraSetCal3_S2([camera1, camera2])
+
+# Define a 3D point, generate measurements by projecting it to the 
+# cameras and adding some noise.
+landmark = Point3(0.1, 0.1, 1.5)
+m1_noisy = cameras[0].project(landmark) + gtsam.Point2(0.00817, 0.00977)
+m2_noisy = cameras[1].project(landmark) + gtsam.Point2(-0.00610, 0.01969)
+measurements = gtsam.Point2Vector([m1_noisy, m2_noisy])
+
+# Triangulate!
+dlt_estimate = gtsam.triangulatePoint3(cameras, measurements, rank_tol=1e-9, optimize=False)
+print("DLT estimation error: {:.04f}".format(np.linalg.norm(dlt_estimate - landmark)))
+
+# Optimization needs the measurement noise model.
+noisemodel = gtsam.noiseModel.Isotropic.Sigma(2, 1e-3)
+
+optimal_estimate = gtsam.triangulatePoint3(cameras, measurements, rank_tol=1e-9, optimize=True, model=noisemodel)
+print("Optimal estimation error: {:.04f}".format(np.linalg.norm(optimal_estimate - landmark)))
