@@ -10,12 +10,11 @@ maze_height = 3.6  # Height of the maze
 robot_camera = (0, 0)  # (x, y)
 
 # Beacon coordinates (known initially)
-beacon_coordinates = [beacon1 = (1, 0), beacon2 = (0, 1), beacon3 = (-1, 0)]
-
-# Angle measurements from the camera
-angle1 = math.radians(45)  # Angle to beacon1
-angle2 = math.radians(135)  # Angle to beacon2
-angle3 = math.radians(-45)  # Angle to beacon3
+beacon_coordinates = {
+    'red': (1.0, 2.0),    # Example coordinates, replace with actual values
+    'blue': (3.0, 4.0),
+    'yellow': (5.0, 6.0)
+}
 
 # Create a graph to hold the nodes and edges
 graph = {}
@@ -34,6 +33,7 @@ def measure_angle(beacon_color):
     angle = 0.0    # Example angle, replace with actual measured angle
     return angle
 
+
 def localize_robot():
     # Measure angles to the beacons
     angles = {}
@@ -43,54 +43,62 @@ def localize_robot():
 
     # Calculate robot position using triangulation
     robot_position = None
-    if 'red' in angles and 'blue' in angles and 'yellow' in angles:
-        # Extract the measured angles
-        angle_red = angles['red']
-        angle_blue = angles['blue']
-        angle_yellow = angles['yellow']
+    visible_beacons = list(angles.keys())
 
-        # Calculate the robot position using trigonometry
-        # Convert angles from degrees to radians
-        angle_red_rad = math.radians(angle_red)
-        angle_blue_rad = math.radians(angle_blue)
-        angle_yellow_rad = math.radians(angle_yellow)
+    # Localize based on any two visible beacons
+    if len(visible_beacons) >= 2:
+        # Iterate through all possible pairs of visible beacons
+        for i in range(len(visible_beacons)):
+            for j in range(i + 1, len(visible_beacons)):
+                
+                # Extract the measured angles
+                angle1 = angles[visible_beacons[0]]
+                angle2 = angles[visible_beacons[1]]
 
-        # Calculate the differences in angles
-        delta_alpha = angle_blue_rad - angle_red_rad
-        delta_beta = angle_yellow_rad - angle_red_rad
+                # Extract the beacon coordinates
+                beacon1 = beacon_coordinates[visible_beacons[0]]
+                beacon2 = beacon_coordinates[visible_beacons[1]]
 
-        # Calculate the distances to the beacons
-        distance_red = math.sqrt(beacon_coordinates['red'][0]**2 + beacon_coordinates['red'][1]**2)
-        distance_blue = math.sqrt(beacon_coordinates['blue'][0]**2 + beacon_coordinates['blue'][1]**2)
-        distance_yellow = math.sqrt(beacon_coordinates['yellow'][0]**2 + beacon_coordinates['yellow'][1]**2)
+                # Calculate the distances to the beacons
+                distance1 = math.sqrt(beacon1[0]**2 + beacon1[1]**2)
+                distance2 = math.sqrt(beacon2[0]**2 + beacon2[1]**2)
 
-        # Calculate the robot position
-        x = (distance_red * math.tan(angle_red_rad) + distance_blue * math.tan(angle_blue_rad)) / (math.tan(angle_red_rad) + math.tan(angle_blue_rad))
-        y = (distance_red * math.tan(angle_red_rad) + distance_yellow * math.tan(angle_yellow_rad)) / (math.tan(angle_red_rad) + math.tan(angle_yellow_rad))
+                # Calculate the robot position
+                x = (distance1 * math.tan(angle1) + distance2 * math.tan(angle2)) / (math.tan(angle1) + math.tan(angle2))
+                y = (distance1 * math.tan(angle1) + distance2 * math.tan(angle2)) / (math.tan(angle1) + math.tan(angle2))
 
         robot_position = (x, y)
-
-    return robot_position
+        return robot_position
 
 # Function to update the graph with the robot's position
 def update_graph(robot_position):
     # Find the closest vertex in the graph to the robot's position
-    closest_vertex = min(graph.keys(), key=lambda vertex: measure_angle(robot_position, vertex))
+    closest_vertex = min(graph.keys(), key=lambda vertex: math.dist(vertex, robot_position))
 
     # Add an edge between the closest vertex and the robot's position
     graph[closest_vertex].append(robot_position)
     graph[robot_position] = [closest_vertex]
 
-# Iterate over each cell in the maze
-for i in range(maze_width):
-    for j in range(maze_height):
-        cell = (i, j)
 
-        # Perform triangulation to estimate the robot's position for the current cell
-        robot_position = localize_robot(beacon1, beacon2, beacon3, angle1, angle2, angle3)
+# Main function
+def main():
+    robot_position = localize_robot()
+    if robot_position is not None:
+        print("Robot position:", robot_position)
+        # Iterate over each cell in the maze
+        for i in range(maze_width):
+            for j in range(maze_height):
+                cell = (i, j)
+                # Perform triangulation to estimate the robot's position for the current cell
+                robot_position = localize_robot()
 
-        # Update the graph with the estimated robot's position for the current cell
-        update_graph(robot_position)
+                # Update the graph with the estimated robot's position for the current cell
+                update_graph(robot_position)
+    else:
+        print("Localization failed.")
 
-# Print the graph
-print(graph)
+if __name__ == '__main__':
+    main()
+    
+    # Print the graph
+    print(graph)
