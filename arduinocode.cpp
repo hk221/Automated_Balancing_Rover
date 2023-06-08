@@ -35,7 +35,6 @@ void setup() {
   pinMode(stepPin2, OUTPUT);
   pinMode(dirPin2, OUTPUT);
 
-  receiverDataFromFPGA();
   // Allocate memory for the image array from fpga and ensure heoght and wodth allocated properly 
   image = new uint16_t*[height];
   for (int row = 0; row < height; row++) {
