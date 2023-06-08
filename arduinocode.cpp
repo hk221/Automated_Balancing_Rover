@@ -36,19 +36,18 @@ void setup() {
   pinMode(dirPin2, OUTPUT);
 
   receiverDataFromFPGA();
-  // Allocate memory for the image array
+  // Allocate memory for the image array from fpga and ensure heoght and wodth allocated properly 
   image = new uint16_t*[height];
   for (int row = 0; row < height; row++) {
     image[row] = new uint16_t[width];
   }
-  // Initialize the communication with the FPGA (e.g., UART or SPI)
-  // receive the image data from the FPGA and store it in the image array
+  // receive the image data from the FPGA and store it in the image array created above
   for (int row = 0; row < height; row++) {
     for (int col = 0; col < width; col++) {
       //using data from fpga assign bits
       uint8_t msb = receiveDataFromFPGA(); 
       uint8_t lsb = receiveDataFromFPGA(); 
-      //combine bits in array
+      //combine bits in array to make image matrix
       image[row][col] = (msb << 8) | lsb;
     }
   }
