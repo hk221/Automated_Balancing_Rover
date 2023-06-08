@@ -6,7 +6,6 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 
-
 //receivers arduino data processes it and prints it 
 app.post("/acc", (req, res) => {
   const now = new Date();
@@ -19,7 +18,6 @@ app.post("/acc", (req, res) => {
   res.writeHead(200, { "Content-Type": "text/plain" });
   res.end("Got Acc");
 });
-
 
 app.get("/acc", (req, res) => {
 
