@@ -9,10 +9,8 @@ maze_height = 3.6  # Height of the maze
 # Robot-camera coordinates
 robot_camera = (0, 0)  # (x, y)
 
-# Beacon coordinates (known)
-beacon1 = (1, 0)  # (x, y)
-beacon2 = (0, 1)
-beacon3 = (-1, 0)
+# Beacon coordinates (known initially)
+beacon_coordinates = [beacon1 = (1, 0), beacon2 = (0, 1), beacon3 = (-1, 0)]
 
 # Angle measurements from the camera
 angle1 = math.radians(45)  # Angle to beacon1
@@ -77,7 +75,7 @@ def localize_robot():
 # Function to update the graph with the robot's position
 def update_graph(robot_position):
     # Find the closest vertex in the graph to the robot's position
-    closest_vertex = min(graph.keys(), key=lambda vertex: calculate_distance(robot_position, vertex))
+    closest_vertex = min(graph.keys(), key=lambda vertex: measure_angle(robot_position, vertex))
 
     # Add an edge between the closest vertex and the robot's position
     graph[closest_vertex].append(robot_position)
@@ -89,7 +87,7 @@ for i in range(maze_width):
         cell = (i, j)
 
         # Perform triangulation to estimate the robot's position for the current cell
-        robot_position = triangulate(beacon1, beacon2, beacon3, angle1, angle2, angle3)
+        robot_position = localize_robot(beacon1, beacon2, beacon3, angle1, angle2, angle3)
 
         # Update the graph with the estimated robot's position for the current cell
         update_graph(robot_position)
