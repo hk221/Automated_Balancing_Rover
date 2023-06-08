@@ -2,13 +2,25 @@ import cv2
 import math
 import numpy as np
 
+# Dimensions of the maze
+maze_width = 2.8  # Width of the maze
+maze_height = 3.6  # Height of the maze
 
-# Known coordinates of the beacons
-beacon_coordinates = {
-    'red': (1.0, 2.0),    # Example coordinates, replace with actual values
-    'blue': (3.0, 4.0),
-    'yellow': (5.0, 6.0)
-}
+# Robot-camera coordinates
+robot_camera = (0, 0)  # (x, y)
+
+# Beacon coordinates (known)
+beacon1 = (1, 0)  # (x, y)
+beacon2 = (0, 1)
+beacon3 = (-1, 0)
+
+# Angle measurements from the camera
+angle1 = math.radians(45)  # Angle to beacon1
+angle2 = math.radians(135)  # Angle to beacon2
+angle3 = math.radians(-45)  # Angle to beacon3
+
+# Create a graph to hold the nodes and edges
+graph = {}
 
 # Camera parameters (focal length and optical center)
 focal_length = 500.0    # Example focal length, replace with actual value
@@ -62,13 +74,25 @@ def localize_robot():
 
     return robot_position
 
-# Main function
-def main():
-    robot_position = localize_robot()
-    if robot_position is not None:
-        print("Robot position:", robot_position)
-    else:
-        print("Localization failed.")
+# Function to update the graph with the robot's position
+def update_graph(robot_position):
+    # Find the closest vertex in the graph to the robot's position
+    closest_vertex = min(graph.keys(), key=lambda vertex: calculate_distance(robot_position, vertex))
 
-if __name__ == '__main__':
-    main()
+    # Add an edge between the closest vertex and the robot's position
+    graph[closest_vertex].append(robot_position)
+    graph[robot_position] = [closest_vertex]
+
+# Iterate over each cell in the maze
+for i in range(maze_width):
+    for j in range(maze_height):
+        cell = (i, j)
+
+        # Perform triangulation to estimate the robot's position for the current cell
+        robot_position = triangulate(beacon1, beacon2, beacon3, angle1, angle2, angle3)
+
+        # Update the graph with the estimated robot's position for the current cell
+        update_graph(robot_position)
+
+# Print the graph
+print(graph)
