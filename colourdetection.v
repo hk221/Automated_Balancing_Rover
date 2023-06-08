@@ -27,9 +27,7 @@ module EEE_IMGPROC(
 	
 	// conduit
 	mode
-	
 );
-
 
 // global clock & reset
 input	clk;
@@ -42,7 +40,6 @@ input							s_write;
 output	reg	[31:0]	s_readdata;
 input	[31:0]				s_writedata;
 input	[2:0]					s_address;
-
 
 // streaming sink
 input	[23:0]            	sink_data;
@@ -69,11 +66,11 @@ parameter MESSAGE_BUF_MAX = 256;
 parameter MSG_INTERVAL = 6;
 parameter BB_COL_DEFAULT = 24'h00ff00;
 
-
 wire [7:0]   red, green, blue, grey;
 wire [7:0]   red_out, green_out, blue_out;
 
 wire         sop, eop, in_valid, out_ready;
+
 ////////////////////////////////////////////////////////////////////////
 
 // Detect red areas
@@ -116,12 +113,12 @@ assign new_image = bb_active ? bb_col : (red_detect ? red_high : (blue_detect ? 
 // Switch output pixels depending on mode switch
 // Don't modify the start-of-packet word - it's a packet descriptor
 // Don't modify data in non-video packets
-assign {red_out, green_out, blue_out} = (mode & ~sop & packet_video) ? new_image : {red,green,blue};
+assign {red_out, green_out, blue_out} = (mode & ~sop & packet_video) ? new_image : {red, green, blue};
 
 //Count valid pixels to get the image coordinates. Reset and detect packet type on Start of Packet.
 reg [10:0] x, y;
 reg packet_video;
-always@(posedge clk) begin
+always @(posedge clk) begin
 	if (sop) begin
 		x <= 11'h0;
 		y <= 11'h0;
@@ -139,43 +136,63 @@ always@(posedge clk) begin
 end
 
 //Find first and last red pixels
-reg [10:0] x_min, y_min, x_max, y_max;
-always@(posedge clk) begin
-	if (red_detect & in_valid) begin	//Update bounds when the pixel is red
-		if (x < x_min) x_min <= x;
-		if (x > x_max) x_max <= x;
-		if (y < y_min) y_min <= y;
-		y_max <= y;
+reg [10:0] x_min_red, y_min_red, x_max_red, y_max_red;
+reg [10:0] x_min_blue, y_min_blue, x_max_blue, y_max_blue;
+reg [10:0] x_min_yellow, y_min_yellow, x_max_yellow, y_max_yellow;
+reg [10:0] x_min_white, y_min_white, x_max_white, y_max_white;
+reg [10:0] x_min_black, y_min_black, x_max_black, y_max_black;
+always @(posedge clk) begin
+	if (red_detect) begin
+		if (x < x_min_red) x_min_red <= x;
+		if (x > x_max_red) x_max_red <= x;
+		if (y < y_min_red) y_min_red <= y;
+		if (y > y_max_red) y_max_red <= y;
 	end
-	if (blue_detect & in_valid) begin	//Update bounds when the pixel is blue
-		if (x < x_min) x_min <= x;
-		if (x > x_max) x_max <= x;
-		if (y < y_min) y_min <= y;
-		y_max <= y;
+	if (blue_detect) begin
+		if (x < x_min_blue) x_min_blue <= x;
+		if (x > x_max_blue) x_max_blue <= x;
+		if (y < y_min_blue) y_min_blue <= y;
+		if (y > y_max_blue) y_max_blue <= y;
+		end
+	if (yellow_detect) begin
+		if (x < x_min_yellow) x_min_yellow <= x;
+		if (x > x_max_yellow) x_max_yellow <= x;
+		if (y < y_min_yellow) y_min_yellow <= y;
+		if (y > y_max_yellow) y_max_yellow <= y;
 	end
-	if (yellow_detect & in_valid) begin	//Update bounds when the pixel is yellow
-		if (x < x_min) x_min <= x;
-		if (x > x_max) x_max <= x;
-		if (y < y_min) y_min <= y;
-		y_max <= y;
+	if (white_detect) begin
+		if (x < x_min_white) x_min_white <= x;
+		if (x > x_max_white) x_max_white <= x;
+		if (y < y_min_white) y_min_white <= y;
+		if (y > y_max_white) y_max_white <= y;
 	end
-	if (white_detect & in_valid) begin	//Update bounds when the pixel is white
-		if (x < x_min) x_min <= x;
-		if (x > x_max) x_max <= x;
-		if (y < y_min) y_min <= y;
-		y_max <= y;
-	end
-	if (black_detect & in_valid) begin	//Update bounds when the pixel is black
-		if (x < x_min) x_min <= x;
-		if (x > x_max) x_max <= x;
-		if (y < y_min) y_min <= y;
-		y_max <= y;
+	if (black_detect) begin
+		if (x < x_min_black) x_min_black <= x;
+		if (x > x_max_black) x_max_black <= x;
+		if (y < y_min_black) y_min_black <= y;
+		if (y > y_max_black) y_max_black <= y;
 	end
 	if (sop & in_valid) begin	//Reset bounds on start of packet
-		x_min <= IMAGE_W-11'h1;
-		x_max <= 0;
-		y_min <= IMAGE_H-11'h1;
-		y_max <= 0;
+		x_min_red <= IMAGE_W-11'h1;
+		x_max_red <= 0;
+		y_min_red <= IMAGE_H-11'h1;
+		y_max_red <= 0;
+		x_min_blue <= IMAGE_W-11'h1;
+		x_max_blue <= 0;
+		y_min_blue <= IMAGE_H-11'h1;
+		y_max_blue <= 0;
+		x_min_yellow <= IMAGE_W-11'h1;
+		x_max_yellow <= 0;
+		y_min_yellow <= IMAGE_H-11'h1;
+		y_max_yellow <= 0;
+		x_min_white <= IMAGE_W-11'h1;
+		x_max_white <= 0;
+		y_min_white <= IMAGE_H-11'h1;
+		y_max_white <= 0;
+		x_min_black <= IMAGE_W-11'h1;
+		x_max_black <= 0;
+		y_min_black <= IMAGE_H-11'h1;
+		y_max_black <= 0;
 	end
 end
 
@@ -183,14 +200,14 @@ end
 reg [1:0] msg_state;
 reg [10:0] left, right, top, bottom;
 reg [7:0] frame_count;
-always@(posedge clk) begin
+always @(posedge clk) begin
 	if (eop & in_valid & packet_video) begin  //Ignore non-video packets
 		
 		//Latch edges for display overlay on the next frame
-		left <= x_min;
-		right <= x_max;
-		top <= y_min;
-		bottom <= y_max;
+		left <= x_min_red;
+		right <= x_max_red;
+		top <= y_min_red;
+		bottom <= y_max_red;
 		
 		
 		//Start message writer FSM once every MSG_INTERVAL frames, if there is room in the FIFO
@@ -217,7 +234,7 @@ wire msg_buf_empty;
 
 `define RED_BOX_MSG_ID "RBB"
 
-always@(*) begin	//Write words to FIFO as state machine advances
+always @(*) begin	//Write words to FIFO as state machine advances
 	case(msg_state)
 		2'b00: begin
 			msg_buf_in = 32'b0;
@@ -228,11 +245,11 @@ always@(*) begin	//Write words to FIFO as state machine advances
 			msg_buf_wr = 1'b1;
 		end
 		2'b10: begin
-			msg_buf_in = {5'b0, x_min, 5'b0, y_min};	//Top left coordinate
+			msg_buf_in = {5'b0, x_min_red, 5'b0, y_min_red};	//Top left coordinate
 			msg_buf_wr = 1'b1;
 		end
 		2'b11: begin
-			msg_buf_in = {5'b0, x_max, 5'b0, y_max}; //Bottom right coordinate
+			msg_buf_in = {5'b0, x_max_red, 5'b0, y_max_red}; //Bottom right coordinate
 			msg_buf_wr = 1'b1;
 		end
 	endcase
@@ -326,7 +343,7 @@ reg read_d; //Store the read signal for correct updating of the message buffer
 always @ (posedge clk)
 begin
    if (~reset_n) begin
-	   s_readdata <= {32'b0};
+	   s_readdata <= 32'b0;
 		read_d <= 1'b0;
 	end
 	
@@ -342,7 +359,5 @@ end
 
 //Fetch next word from message buffer after read from READ_MSG
 assign msg_buf_rd = s_chipselect & s_read & ~read_d & ~msg_buf_empty & (s_address == `READ_MSG);
-						
-
 
 endmodule
