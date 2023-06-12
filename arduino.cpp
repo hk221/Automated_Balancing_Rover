@@ -16,8 +16,6 @@ WiFiClient wifi;
 HttpClient client = HttpClient(wifi, server, 3000);
 
 float x = 0.0;
-//float accY = 0.0;
-//float accZ = 0.0;
 
 void setup() {
   Serial.begin(9600);
@@ -26,7 +24,6 @@ void setup() {
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print("Attempting to connect to SSID: ");
     Serial.println(ssid);
-    int status = WiFi.begin(ssid,pass);
     WiFi.begin(ssid, pass);
     delay(10000);
   }
@@ -39,21 +36,15 @@ void loop() {
   receiveDataFromFPGA();
   Serial.println("Received coordinates: ");
   Serial.println(x);
-  Serial.println(", ");
-  //Serial.print(accY);
-  //Serial.print(", ");
-  //Serial.println(accZ);
   sendData();
 }
 
 void receiveDataFromFPGA() {
-  while (uart.available() < 3) {
-    // Wait until at least 3 bytes are available to read
+  while (uart.available() < 1) {
+    // Wait until at least 1 byte is available to read
   }
 
   x = float(uart.read()) / 100.0;
- // accY = float(uart.read()) / 100.0;
- // accZ = float(uart.read()) / 100.0;
 }
 
 void sendData() {
@@ -68,13 +59,9 @@ void sendData() {
 
   JSONVar imageJson;
   imageJson["accX"] = x;
-  imageJson["accX"] = "12";
-  //imageJson["accY"] = accY;
-  //imageJson["accZ"] = accZ;
   String accString = JSON.stringify(imageJson);
 
   // Send the image data to the server
-  client.beginRequest();
   client.post("/acc", "application/json", accString);
   String response = client.responseBody();
   Serial.println(response);
