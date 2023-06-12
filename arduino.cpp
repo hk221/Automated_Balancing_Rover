@@ -81,13 +81,17 @@ void sendData() {
 
   // Convert the image data to a JSON string
   JSONVar imageJson;
-  for (int row = 0; row < height; row++) {
-    JSONVar rowJson;
-    for (int col = 0; col < width; col++) {
-      rowJson[col] = image[row][col];
-    }
-    imageJson[row] = rowJson;
-  }
+  // for (int row = 0; row < height; row++) {
+  //   JSONVar rowJson;
+  //   for (int col = 0; col < width; col++) {
+  //     rowJson[col] = image[row][col];
+  //   }
+  //   imageJson[row] = rowJson;
+  // }
+  // String accString = JSON.stringify(imageJson);
+  imageJson["accX"] = "12";
+  imageJson["accY"] = "12";
+  imageJson["accZ"] = "12";
   String accString = JSON.stringify(imageJson);
 
   // Send the image data to the server
