@@ -1,12 +1,11 @@
 #include <WiFi.h>
 #include <Arduino_JSON.h>
 #include <ArduinoHttpClient.h>
-#include <SoftwareSerial.h>
 
-#define RX_PIN 18
-#define TX_PIN 19
+#define RX_PIN 16
+#define TX_PIN 17
 
-SoftwareSerial uart(RX_PIN, TX_PIN);
+HardwareSerial uart(2);  // Use Serial1 for hardware serial communication
 
 char ssid[] = "96 Dalling Road";
 char pass[] = "Panda123";
@@ -19,7 +18,7 @@ float x = 0.0;
 
 void setup() {
   Serial.begin(9600);
-  uart.begin(9600);
+  Serial1.begin(9600);  // Initialize hardware serial port
 
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print("Attempting to connect to SSID: ");
@@ -40,11 +39,11 @@ void loop() {
 }
 
 void receiveDataFromFPGA() {
-  while (uart.available() < 1) {
+  while (Serial1.available() < 1) {
     // Wait until at least 1 byte is available to read
   }
 
-  x = float(uart.read()) / 100.0;
+  x = float(Serial1.read()) / 100.0;
 }
 
 void sendData() {
