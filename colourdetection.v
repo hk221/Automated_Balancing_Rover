@@ -299,9 +299,9 @@ STREAM_REG #(.DATA_WIDTH(26)) out_reg (
 
 // Addresses
 `define REG_STATUS    			0
-`define READ_MSG    				1
+`define READ_MSG    			1
 `define READ_ID    				2
-`define REG_BBCOL					3
+`define REG_BBCOL				3
 
 //Status register bits
 // 31:16 - unimplemented
