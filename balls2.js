@@ -5,48 +5,34 @@ const bodyParser = require("body-parser");
 const path = require("path"); // Import the 'path' module
 const cors = require("cors");
 
-app.use(cors({ origin: '*' }));
+app.use(cors({origin:'*'}));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 
-const HEIGHT = 480;
-const WIDTH = 640;
-let matrix = createEmptyMatrix();
+let acc = ""; // Declare the global variable acc
 
-function createEmptyMatrix() {
-  const emptyMatrix = [];
-  for (let i = 0; i < HEIGHT; i++) {
-    const row = new Array(WIDTH).fill(0);
-    emptyMatrix.push(row);
-  }
-  return emptyMatrix;
-}
-
-// Receives Arduino data, processes it, and stores it in the matrix
+// Receives Arduino data, processes it, and stores it in the acc variable
 app.post("/acc", (req, res) => {
   const now = new Date();
   const hours = now.getHours().toString().padStart(2, "0");
   const minutes = now.getMinutes().toString().padStart(2, "0");
   const seconds = now.getSeconds().toString().padStart(2, "0");
   console.log(`${hours}:${minutes}:${seconds}`);
-
-  const receivedData = req.body;
-  const xCoordinate = parseInt(receivedData.x);
-  const yCoordinate = parseInt(receivedData.y);
-
-  if (xCoordinate >= 0 && xCoordinate < WIDTH && yCoordinate >= 0 && yCoordinate < HEIGHT) {
-    matrix[yCoordinate][xCoordinate] = 1;
-  }
-
-  console.log("Received acc data:", receivedData);
+  acc = JSON.stringify(req.body); // Assign value to the global variable acc
+  console.log("got acc" );
   res.writeHead(200, { "Content-Type": "text/plain" });
   res.end("Got Acc");
 });
 
-// Displays the matrix as JSON on the website
-app.get("/matrix", (req, res) => {
-  res.json(matrix);
+// Displays the acc readings on the website
+app.get("/acc", (req, res) => {
+  const now = new Date();
+  const hours = now.getHours().toString().padStart(2, "0");
+  const minutes = now.getMinutes().toString().padStart(2, "0");
+  const seconds = now.getSeconds().toString().padStart(2, "0");
+  let c = hours + minutes + seconds + ":" + acc;
+  res.send(c);
 });
 
 let htmlContent = `<!DOCTYPE html>
@@ -63,8 +49,8 @@ let htmlContent = `<!DOCTYPE html>
 </html>`;
 
 app.get("/", (req, res) => {
-  res.send(htmlContent);
-});
+   res.send(htmlContent);
+ });
 
 app.listen(3000, "0.0.0.0", () => {
   console.log("Server started");
