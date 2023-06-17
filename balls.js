@@ -2,7 +2,7 @@ const express = require("express");
 const app = express();
 const http = require("http").createServer(app);
 const bodyParser = require("body-parser");
-const path = require("path"); // Import the 'path' module
+const path = require("path");
 const cors = require("cors");
 
 app.use(cors({ origin: '*' }));
@@ -13,6 +13,7 @@ app.use(express.json());
 const HEIGHT = 480;
 const WIDTH = 640;
 let matrix = createEmptyMatrix();
+let coordinates = [];
 
 function createEmptyMatrix() {
   const emptyMatrix = [];
@@ -23,7 +24,6 @@ function createEmptyMatrix() {
   return emptyMatrix;
 }
 
-// Receives Arduino data, processes it, and stores it in the matrix
 app.post("/acc", (req, res) => {
   const now = new Date();
   const hours = now.getHours().toString().padStart(2, "0");
@@ -39,14 +39,19 @@ app.post("/acc", (req, res) => {
     matrix[yCoordinate][xCoordinate] = 1;
   }
 
+  coordinates.push({ x: xCoordinate, y: yCoordinate });
+
   console.log("Received acc data:", receivedData);
   res.writeHead(200, { "Content-Type": "text/plain" });
   res.end("Got Acc");
 });
 
-// Displays the matrix as JSON on the website
 app.get("/matrix", (req, res) => {
   res.json(matrix);
+});
+
+app.get("/coordinates", (req, res) => {
+  res.json(coordinates);
 });
 
 let htmlContent = `<!DOCTYPE html>
@@ -59,6 +64,17 @@ let htmlContent = `<!DOCTYPE html>
   <h1>My Website</h1>
   <h2>Accelerometer Readings</h2>
   <p id="acc"></p>
+  <button onclick="getCoordinates()">Get Coordinates</button>
+  <script>
+    function getCoordinates() {
+      fetch("/coordinates")
+        .then(response => response.json())
+        .then(data => {
+          const accElement = document.getElementById("acc");
+          accElement.textContent = JSON.stringify(data);
+        });
+    }
+  </script>
 </body>
 </html>`;
 
