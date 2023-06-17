@@ -94,21 +94,30 @@ void ldrdata(int& value1, int& value2, int& value3, int& value4){
   // Print the 4-bit number to Serial Monitor
   Serial.print("Analog Inputs: ");
   Serial.println(bits, BIN);
-  if (value1 < 1000 || value2 < 1000) {
+  if (value1 == 1 || value2 == 1) {
     digitalWrite(dirPin, HIGH);
     digitalWrite(dirPin2, LOW);
+    delayMicroseconds(2000);
     Serial.println("Moving left");
   }
-  else if (value3 < 1000 || value4 < 1000) {
+  else if (value3 == 1 || value4 == 1) {
     digitalWrite(dirPin, LOW);
     digitalWrite(dirPin2, HIGH);
+    delayMicroseconds(2000);
     Serial.println("Moving right");
   }
   else {
     digitalWrite(dirPin, LOW);
     digitalWrite(dirPin2, LOW);
+    delayMicroseconds(2000);
     Serial.println("No movement");
   }
+  digitalWrite(stepPin, HIGH);
+  digitalWrite(stepPin2, HIGH);
+  delayMicroseconds(2000);
+  digitalWrite(stepPin, LOW);
+  digitalWrite(stepPin2, LOW);
+  delayMicroseconds(2000);
   delay(1000); // Delay between readings (adjust as needed)
 }
 
