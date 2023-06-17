@@ -39,7 +39,7 @@ app.post("/acc", (req, res) => {
     matrix[yCoordinate][xCoordinate] = 1;
   }
 
-  coordinates.push({ x: xCoordinate, y: yCoordinate });
+  matrix.push({ matrix: matrix, time: `${hours}:${minutes}:${seconds}`});
 
   console.log("Received acc data:", receivedData);
   res.writeHead(200, { "Content-Type": "text/plain" });

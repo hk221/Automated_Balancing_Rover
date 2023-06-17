@@ -61,7 +61,28 @@ void receiveDataFromFPGA(int& Coordinate) {
     yCoordinate = yString.toInt();
   }
 }
+void receiveDataFromServer(int& x, int& y) {
+  // Make a GET request to fetch the coordinates from the server
+  client.get("/coordinates");
 
+  // Read the response from the server
+  String response = client.responseBody();
+
+  // Parse the JSON response
+  JSONVar coordinatesJson = JSON.parse(response);
+  if (JSON.typeof(coordinatesJson) == JSON_ARRAY && coordinatesJson.length() >= 1) {
+    // Extract the first set of coordinates
+    JSONVar firstCoordinates = coordinatesJson[0];
+    if (JSON.typeof(firstCoordinates) == JSON_OBJECT) {
+      // Retrieve the x and y coordinates from the JSON object
+      x = firstCoordinates["x"];
+      y = firstCoordinates["y"];
+    }
+  }
+}
+void motoTask(int& x, int& y){
+  
+}
 void sendData(int x, int y) {
   JSONVar imageJson;
   imageJson["x"] = xCoordinate;
