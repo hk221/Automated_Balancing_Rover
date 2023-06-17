@@ -15,7 +15,7 @@ const int analogPin4 = 33;  // GPIO 33 corresponds to analog input 3
 // Motor pins
 #define dirPin 12
 #define stepPin 14
-#define stepsPerRevolution 50
+#define stepsPerRevolution 100
 #define dirPin2 26
 #define stepPin2 27
 HardwareSerial SerialPort(2);
