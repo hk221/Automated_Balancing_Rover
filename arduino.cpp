@@ -45,6 +45,7 @@ void loop() {
   receiveDataFromFPGA(x, y);
   // Use the received x and y coordinates as needed
   sendData(x, y);
+  receiveDataFromServer(matrix);
 }
 
 void receiveDataFromFPGA(int& Coordinate) {
@@ -61,9 +62,9 @@ void receiveDataFromFPGA(int& Coordinate) {
     yCoordinate = yString.toInt();
   }
 }
-void receiveDataFromServer(int& x, int& y) {
+void receiveDataFromServer(int& matrix) {
   // Make a GET request to fetch the coordinates from the server
-  client.get("/coordinates");
+  client.get("/matrix");
 
   // Read the response from the server
   String response = client.responseBody();
