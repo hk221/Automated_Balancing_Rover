@@ -7,7 +7,17 @@
 
 #define RX_PIN 16
 #define TX_PIN 17
-
+//ldr pins
+const int analogPin1 = 36;  // GPIO 36 corresponds to analog input 0
+const int analogPin2 = 39;  // GPIO 39 corresponds to analog input 1
+const int analogPin3 = 32;  // GPIO 32 corresponds to analog input 2
+const int analogPin4 = 33;  // GPIO 33 corresponds to analog input 3
+// Motor pins
+#define dirPin 12
+#define stepPin 14
+#define stepsPerRevolution 50
+#define dirPin2 26
+#define stepPin2 27
 HardwareSerial SerialPort(2);
 
 char ssid[] = "96 Dalling Road";
@@ -19,7 +29,16 @@ HttpClient client = HttpClient(wifi, server, 3000);
 
 void setup() {
   Serial.begin(115200, SERIAL_8N1, 16, 17);
-
+  // Configure analog pins as inputs for ldrs
+  pinMode(analogPin1, INPUT);
+  pinMode(analogPin2, INPUT);
+  pinMode(analogPin3, INPUT);
+  pinMode(analogPin4, INPUT);
+  //pin outputs for motors
+  pinMode(stepPin, OUTPUT);
+  pinMode(dirPin, OUTPUT);
+  pinMode(stepPin2, OUTPUT);
+  pinMode(dirPin2, OUTPUT);
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print("Attempting to connect to SSID: ");
     Serial.println(ssid);
@@ -46,6 +65,51 @@ void loop() {
   // Use the received x and y coordinates as needed
   sendData(x, y);
   receiveDataFromServer(matrix);
+  ldrdata(value1, value2, value3, value4);
+
+}
+void ldrdata(int& value1, int& value2, int& value3, int& value4){
+    // Read voltage values from analog pins
+  int value1 = analogRead(analogPin1);
+  int value2 = analogRead(analogPin2);
+  int value3 = analogRead(analogPin3);
+  int value4 = analogRead(analogPin4);
+
+  // Process the voltage values
+  // Set the corresponding bit to 1 if the analog value is higher than 2500
+  byte bits = 0;
+  if (value1 > 2500) {
+    bits |= 0b0001;
+  }
+  if (value2 > 2500) {
+    bits |= 0b0010;
+  }
+  if (value3 > 2500) {
+    bits |= 0b0100;
+  }
+  if (value4 > 2500) {
+    bits |= 0b1000;
+  }
+
+  // Print the 4-bit number to Serial Monitor
+  Serial.print("Analog Inputs: ");
+  Serial.println(bits, BIN);
+  if (value1 < 1000 || value2 < 1000) {
+    digitalWrite(dirPin, HIGH);
+    digitalWrite(dirPin2, LOW);
+    Serial.println("Moving left");
+  }
+  else if (value3 < 1000 || value4 < 1000) {
+    digitalWrite(dirPin, LOW);
+    digitalWrite(dirPin2, HIGH);
+    Serial.println("Moving right");
+  }
+  else {
+    digitalWrite(dirPin, LOW);
+    digitalWrite(dirPin2, LOW);
+    Serial.println("No movement");
+  }
+  delay(1000); // Delay between readings (adjust as needed)
 }
 
 void receiveDataFromFPGA(int& Coordinate) {
@@ -81,9 +145,7 @@ void receiveDataFromServer(int& matrix) {
     }
   }
 }
-void motoTask(int& x, int& y){
-  
-}
+
 void sendData(int x, int y) {
   JSONVar imageJson;
   imageJson["x"] = xCoordinate;

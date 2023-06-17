@@ -85,3 +85,4 @@ app.get("/", (req, res) => {
 app.listen(3000, "0.0.0.0", () => {
   console.log("Server started");
 });
+//need to process matrix to move rover into 0s
