@@ -3,6 +3,7 @@
 #include <ArduinoHttpClient.h>
 #include <HardwareSerial.h>
 #include <string.h>
+#include <math.h>
 
 #define RX_PIN 16
 #define TX_PIN 17
@@ -15,8 +16,6 @@ char server[] = "18.212.197.92";
 byte ip[] = { 18, 212, 197, 92 };
 WiFiClient wifi;
 HttpClient client = HttpClient(wifi, server, 3000);
-
-String x;
 
 void setup() {
   Serial.begin(115200, SERIAL_8N1, 16, 17);
@@ -31,7 +30,7 @@ void setup() {
   printWifiStatus();
   Serial.println("\nStarting connection to server...");
   while (!client.connected()) {
-  Serial.println("Connecting to server...");
+    Serial.println("Connecting to server...");
     if (client.connect(ip, 3000)) {
       Serial.println("Connected to server");
     } 
@@ -42,26 +41,34 @@ void setup() {
 }
 
 void loop() {
-  receiveDataFromFPGA();
-  sendData(x);
-
+  int x, y;
+  receiveDataFromFPGA(x, y);
+  // Use the received x and y coordinates as needed
+  sendData(x, y);
 }
 
-void receiveDataFromFPGA() {
+void receiveDataFromFPGA(int& Coordinate) {
   if (Serial.available()) {
-    x = Serial.readStringUntil('\n');
+    String receivedData = Serial.readStringUntil('\n');
     Serial.println("Received coordinates: ");
-    Serial.println(x);
+    Serial.println(receivedData);
+    
+    String xString = receivedData.substring(5, 9); // Extract characters 5 to 8 (x coordinate)
+    String yString = receivedData.substring(9);    // Extract characters 9 onwards (y coordinate)
+  
+    // Convert the extracted strings into integers
+    xCoordinate = xString.toInt();
+    yCoordinate = yString.toInt();
   }
 }
 
-void sendData(String y) {
-  // JSONVar imageJson;
-  // imageJson["accX"] = x;
-  // String accString = JSON.stringify(imageJson);
-
+void sendData(int x, int y) {
+  JSONVar imageJson;
+  imageJson["x"] = xCoordinate;
+  imageJson["y"] = yCoordinate;
+  String accString = JSON.stringify(imageJson);
   // Send the image data to the server
-  client.post("/acc", "application/json", y);
+  client.post("/acc", "application/json", accString);
   String response = client.responseBody();
   Serial.println(response);
 }
@@ -69,9 +76,9 @@ void sendData(String y) {
 void printWifiStatus() {
   Serial.print("SSID: ");
   Serial.println(WiFi.SSID());
-  IPAddress ip = WiFi.localIP();
+  IPAddress ipAddress = WiFi.localIP();
   Serial.print("IP Address: ");
-  Serial.println(ip);
+  Serial.println(ipAddress);
   long rssi = WiFi.RSSI();
   Serial.print("Signal strength (RSSI):");
   Serial.print(rssi);
