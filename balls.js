@@ -34,15 +34,27 @@ app.post("/acc", (req, res) => {
   const receivedData = req.body;
   const xCoordinates = [];
   const yCoordinates = [];
+  if (receivedData.receivedData === "WBB") {
+    for (let i = 0; i < 4; i++) {
+      const xCoordinate = parseInt(receivedData[`x${i}`]);
+      const yCoordinate = parseInt(receivedData[`y${i}`]);
+  
+      if (xCoordinate >= 0 && xCoordinate < WIDTH && yCoordinate >= 0 && yCoordinate < HEIGHT) {
+        xCoordinates.push(xCoordinate);
+        yCoordinates.push(yCoordinate);
+      }
+    }
+    return;
+  }  
+
+  const newMatrix = createEmptyMatrix();
 
   for (let i = 0; i < 4; i++) {
-    const xCoordinate = parseInt(receivedData[`x${i}`]);
-    const yCoordinate = parseInt(receivedData[`y${i}`]);
+    const xCoordinate = xCoordinates[i];
+    const yCoordinate = yCoordinates[i];
 
     if (xCoordinate >= 0 && xCoordinate < WIDTH && yCoordinate >= 0 && yCoordinate < HEIGHT) {
-      xCoordinates.push(xCoordinate);
-      yCoordinates.push(yCoordinate);
-      matrix[yCoordinate][xCoordinate] = 1;
+      newMatrix[yCoordinate][xCoordinate] = 1;
     }
   }
 
@@ -54,17 +66,33 @@ app.post("/acc", (req, res) => {
 
   for (let y = minY + 1; y < maxY; y++) {
     for (let x = minX + 1; x < maxX; x++) {
-      matrix[y][x] = 1;
+      newMatrix[y][x] = 1;
     }
   }
 
+  matrix = newMatrix;
   coordinates.push({ x: xCoordinates, y: yCoordinates, time: `${hours}:${minutes}:${seconds}` });
+
+  // Send the filled matrix to the server
+  fetch("/matrix", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(matrix)
+  })
+  .then(response => response.text())
+  .then(data => {
+    console.log("Server response:", data);
+  })
+  .catch(error => {
+    console.log("Error:", error);
+  });
 
   console.log("Received acc data:", receivedData);
   res.writeHead(200, { "Content-Type": "text/plain" });
   res.end("Got Acc");
 });
-
 
 app.get("/matrix", (req, res) => {
   res.json(matrix);
