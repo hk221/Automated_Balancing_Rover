@@ -58,15 +58,13 @@ void setup() {
     }
   }
 }
-
 void loop() {
   int x, y;
+  ldrdata(value1, value2, value3, value4);
   receiveDataFromFPGA(x, y);
   // Use the received x and y coordinates as needed
   sendData(x, y);
   receiveDataFromServer(matrix);
-  ldrdata(value1, value2, value3, value4);
-
 }
 void ldrdata(int& value1, int& value2, int& value3, int& value4){
     // Read voltage values from analog pins
@@ -74,7 +72,6 @@ void ldrdata(int& value1, int& value2, int& value3, int& value4){
   int value2 = analogRead(analogPin2);
   int value3 = analogRead(analogPin3);
   int value4 = analogRead(analogPin4);
-
   // Process the voltage values
   // Set the corresponding bit to 1 if the analog value is higher than 2500
   byte bits = 0;
@@ -90,7 +87,6 @@ void ldrdata(int& value1, int& value2, int& value3, int& value4){
   if (value4 > 2500) {
     bits |= 0b1000;
   }
-
   // Print the 4-bit number to Serial Monitor
   Serial.print("Analog Inputs: ");
   Serial.println(bits, BIN);
@@ -120,19 +116,21 @@ void ldrdata(int& value1, int& value2, int& value3, int& value4){
   delayMicroseconds(2000);
   delay(1000); // Delay between readings (adjust as needed)
 }
-
-void receiveDataFromFPGA(int& Coordinate) {
-  if (Serial.available()) {
-    String receivedData = Serial.readStringUntil('\n');
-    Serial.println("Received coordinates: ");
-    Serial.println(receivedData);
+void receiveDataFromFPGA(int (&coordinates)[4]) {
+  for (int i = 0; i < 4; i++) {
+    if (Serial.available()) {
+      String receivedData = Serial.readStringUntil('\n');
+      Serial.print("Received coordinates ");
+      Serial.print(i + 1);
+      Serial.print(": ");
+      Serial.println(receivedData);
     
-    String xString = receivedData.substring(5, 9); // Extract characters 5 to 8 (x coordinate)
-    String yString = receivedData.substring(9);    // Extract characters 9 onwards (y coordinate)
+      String xString = receivedData.substring(5, 9); // Extract characters 5 to 8 (x coordinate)
+      String yString = receivedData.substring(9);    // Extract characters 9 onwards (y coordinate)
   
-    // Convert the extracted strings into integers
-    xCoordinate = xString.toInt();
-    yCoordinate = yString.toInt();
+      // Convert the extracted strings into integers
+      coordinates[i] = (xString.toInt() << 16) | yString.toInt();
+    }
   }
 }
 void receiveDataFromServer(int& matrix) {
@@ -154,18 +152,22 @@ void receiveDataFromServer(int& matrix) {
     }
   }
 }
-
-void sendData(int x, int y) {
-  JSONVar imageJson;
-  imageJson["x"] = xCoordinate;
-  imageJson["y"] = yCoordinate;
-  String accString = JSON.stringify(imageJson);
-  // Send the image data to the server
-  client.post("/acc", "application/json", accString);
-  String response = client.responseBody();
-  Serial.println(response);
+void sendData(int (&xCoordinates)[4], int (&yCoordinates)[4]) {
+  for (int i = 0; i < 4; i++) {
+    JSONVar imageJson;
+    imageJson["x"] = xCoordinates[i];
+    imageJson["y"] = yCoordinates[i];
+    String accString = JSON.stringify(imageJson);
+    
+    // Send the image data to the server
+    client.post("/acc", "application/json", accString);
+    String response = client.responseBody();
+    Serial.print("Response ");
+    Serial.print(i + 1);
+    Serial.print(": ");
+    Serial.println(response);
+  }
 }
-
 void printWifiStatus() {
   Serial.print("SSID: ");
   Serial.println(WiFi.SSID());

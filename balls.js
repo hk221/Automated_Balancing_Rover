@@ -32,19 +32,39 @@ app.post("/acc", (req, res) => {
   console.log(`${hours}:${minutes}:${seconds}`);
 
   const receivedData = req.body;
-  const xCoordinate = parseInt(receivedData.x);
-  const yCoordinate = parseInt(receivedData.y);
+  const xCoordinates = [];
+  const yCoordinates = [];
 
-  if (xCoordinate >= 0 && xCoordinate < WIDTH && yCoordinate >= 0 && yCoordinate < HEIGHT) {
-    matrix[yCoordinate][xCoordinate] = 1;
+  for (let i = 0; i < 4; i++) {
+    const xCoordinate = parseInt(receivedData[`x${i}`]);
+    const yCoordinate = parseInt(receivedData[`y${i}`]);
+
+    if (xCoordinate >= 0 && xCoordinate < WIDTH && yCoordinate >= 0 && yCoordinate < HEIGHT) {
+      xCoordinates.push(xCoordinate);
+      yCoordinates.push(yCoordinate);
+      matrix[yCoordinate][xCoordinate] = 1;
+    }
   }
 
-  matrix.push({ matrix: matrix, time: `${hours}:${minutes}:${seconds}`});
+  // Fill the matrix between the four coordinates with the same numbers
+  const minX = Math.min(...xCoordinates);
+  const maxX = Math.max(...xCoordinates);
+  const minY = Math.min(...yCoordinates);
+  const maxY = Math.max(...yCoordinates);
+
+  for (let y = minY + 1; y < maxY; y++) {
+    for (let x = minX + 1; x < maxX; x++) {
+      matrix[y][x] = 1;
+    }
+  }
+
+  coordinates.push({ x: xCoordinates, y: yCoordinates, time: `${hours}:${minutes}:${seconds}` });
 
   console.log("Received acc data:", receivedData);
   res.writeHead(200, { "Content-Type": "text/plain" });
   res.end("Got Acc");
 });
+
 
 app.get("/matrix", (req, res) => {
   res.json(matrix);
