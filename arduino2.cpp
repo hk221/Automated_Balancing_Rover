@@ -50,18 +50,24 @@ void loop() {
 
 void receiveDataFromFPGA(int& Coordinate) {
   if (Serial.available()) {
-    String receivedData = Serial.readStringUntil('\n');
+    String receivedData = Serial.readString();
     Serial.println("Received coordinates: ");
     Serial.println(receivedData);
-    
-    String xString = receivedData.substring(5, 9); // Extract characters 5 to 8 (x coordinate)
-    String yString = receivedData.substring(9);    // Extract characters 9 onwards (y coordinate)
-  
-    // Convert the extracted strings into integers
-    xCoordinate = xString.toInt();
-    yCoordinate = yString.toInt();
+    if (receivedData == "1"){
+      Serial.println("Received red: ");
+    }
+    else if (receivedData == "2"){
+      Serial.println("Received blue: ");
+    }
+    else if (receivedData == "3"){
+      Serial.println("Received yellow: ");
+    }
+    else if (receivedData == "4"){
+      Serial.println("Received white: ");
+    }
   }
 }
+
 void receiveDataFromServer(int& matrix) {
   // Make a GET request to fetch the coordinates from the server
   client.get("/matrix");
@@ -86,8 +92,6 @@ void motoTask(int& x, int& y){
 }
 void sendData(int x, int y) {
   JSONVar imageJson;
-  imageJson["x"] = xCoordinate;
-  imageJson["y"] = yCoordinate;
   String accString = JSON.stringify(imageJson);
   // Send the image data to the server
   client.post("/acc", "application/json", accString);
