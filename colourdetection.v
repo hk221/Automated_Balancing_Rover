@@ -89,6 +89,11 @@ assign yellow_detect = red[7] & green[7] & ~blue[7];
 wire white_detect;
 assign white_detect = red[7] & green[7] & blue[7];
 
+
+//Detect orange areas
+//wire orange_detect;
+//assign orange_detect = red[7] & ~green[7] & blue[7];
+
 // Detect black areas
 wire black_detect;
 assign black_detect = ~(red_detect | blue_detect | yellow_detect | white_detect);
@@ -102,13 +107,21 @@ assign red_high  =  red_detect ? {8'hff, 8'h0, 8'h0} : {grey, grey, grey};
 assign blue_high =  blue_detect ? {8'h00, 8'h00, 8'hff} : {grey, grey, grey};
 assign yellow_high = yellow_detect ? {8'hff, 8'hff, 8'h0} : {grey, grey, grey};
 assign white_high = white_detect ? {8'hff, 8'hff, 8'hff} : {grey, grey, grey};
+//assign orange_high = orange_detect ? {8'hff, 8'h7f, 8'h00} : {grey, grey, grey};
 assign black_high = black_detect ? {8'h0, 8'h0, 8'h0} : {grey, grey, grey};
 
 // Show bounding box
 wire [23:0] new_image;
 wire bb_active;
-assign bb_active = (x == left) | (x == right) | (y == top) | (y == bottom);
-assign new_image = bb_active ? bb_col : (red_detect ? red_high : (blue_detect ? blue_high : (yellow_detect ? yellow_high : (white_detect ? white_high : black_high))));
+assign bb_active = (x == left_red | x == left_blue | x == left_yellow | x == left_white) |
+                  (x == right_red | x == right_blue | x == right_yellow | x == right_white) |
+                  (y == top_red | y == top_blue | y == top_yellow | y == top_white) |
+                  (y == bottom_red | y == bottom_blue | y == bottom_yellow | y == bottom_white);
+
+// add new logic like above for all other colours
+
+
+assign new_image = bb_active ? bb_col : (red_detect ? {8'hff, 8'h0, 8'h0} : (blue_detect ? {8'h00, 8'h00, 8'hff} : (yellow_detect ? {8'hff, 8'hff, 8'h0} : (white_detect ? {8'hff, 8'hff, 8'hff} : black_high))));
 
 // Switch output pixels depending on mode switch
 // Don't modify the start-of-packet word - it's a packet descriptor
@@ -135,12 +148,12 @@ always @(posedge clk) begin
 	end
 end
 
-//Find first and last red pixels
+//Find first and last pixels
 reg [10:0] x_min_red, y_min_red, x_max_red, y_max_red;
 reg [10:0] x_min_blue, y_min_blue, x_max_blue, y_max_blue;
 reg [10:0] x_min_yellow, y_min_yellow, x_max_yellow, y_max_yellow;
 reg [10:0] x_min_white, y_min_white, x_max_white, y_max_white;
-reg [10:0] x_min_black, y_min_black, x_max_black, y_max_black;
+//reg [10:0] x_min_black, y_min_black, x_max_black, y_max_black;
 always @(posedge clk) begin
 	if (red_detect) begin
 		if (x < x_min_red) x_min_red <= x;
@@ -166,12 +179,7 @@ always @(posedge clk) begin
 		if (y < y_min_white) y_min_white <= y;
 		if (y > y_max_white) y_max_white <= y;
 	end
-	if (black_detect) begin
-		if (x < x_min_black) x_min_black <= x;
-		if (x > x_max_black) x_max_black <= x;
-		if (y < y_min_black) y_min_black <= y;
-		if (y > y_max_black) y_max_black <= y;
-	end
+
 	if (sop & in_valid) begin	//Reset bounds on start of packet
 		x_min_red <= IMAGE_W-11'h1;
 		x_max_red <= 0;
@@ -189,26 +197,42 @@ always @(posedge clk) begin
 		x_max_white <= 0;
 		y_min_white <= IMAGE_H-11'h1;
 		y_max_white <= 0;
-		x_min_black <= IMAGE_W-11'h1;
-		x_max_black <= 0;
-		y_min_black <= IMAGE_H-11'h1;
-		y_max_black <= 0;
+	
 	end
 end
 
 //Process bounding box at the end of the frame.
 reg [1:0] msg_state;
-reg [10:0] left, right, top, bottom;
+reg [10:0] left_red, right_red, top_red, bottom_red, left_blue, right_blue, top_blue, bottom_blue, left_yellow, right_yellow, top_yellow, bottom_yellow, left_white, right_white, top_white, bottom_white;
 reg [7:0] frame_count;
 always @(posedge clk) begin
 	if (eop & in_valid & packet_video) begin  //Ignore non-video packets
 		
 		//Latch edges for display overlay on the next frame
-		left <= x_min_red;
-		right <= x_max_red;
-		top <= y_min_red;
-		bottom <= y_max_red;
+		left_red <= x_min_red;
+		right_red <= x_max_red;
+		top_red <= y_min_red;
+		bottom_red <= y_max_red;
+
+		left_blue <= x_min_blue;
+		right_blue <= x_max_blue;
+		top_blue <= y_min_blue;
+		bottom_blue <= y_max_blue;
+
+		left_yellow <= x_min_yellow;
+		right_yellow <= x_max_yellow;
+		top_yellow <= y_min_yellow;
+		bottom_yellow <= y_max_yellow;
+
+		left_white <= x_min_white;
+		right_white <= x_max_white;
+		top_white <= y_min_white;
+		bottom_white <= y_max_white;
+
+		//Latch edges for message writer
 		
+		
+		// add similiar logic as above to latch every frame
 		
 		//Start message writer FSM once every MSG_INTERVAL frames, if there is room in the FIFO
 		frame_count <= frame_count - 1;
@@ -232,28 +256,58 @@ wire msg_buf_rd, msg_buf_flush;
 wire [7:0] msg_buf_size;
 wire msg_buf_empty;
 
-`define RED_BOX_MSG_ID "RBB"
+`define RED_BOX_MSG_ID_BOX_MSG_ID 32'h00000001
+`define BLUE_BOX_MSG_ID_BOX_MSG_ID 32'h00000002
+`define YELLOW_BOX_MSG_ID_BOX_MSG_ID 32'h00000003
+`define WHITE_BOX_MSG_ID_BOX_MSG_ID 32'h00000004
 
-always @(*) begin	//Write words to FIFO as state machine advances
-	case(msg_state)
-		2'b00: begin
-			msg_buf_in = 32'b0;
-			msg_buf_wr = 1'b0;
-		end
-		2'b01: begin
-			msg_buf_in = `RED_BOX_MSG_ID;	//Message ID
-			msg_buf_wr = 1'b1;
-		end
-		2'b10: begin
-			msg_buf_in = {5'b0, x_min_red, 5'b0, y_min_red};	//Top left coordinate
-			msg_buf_wr = 1'b1;
-		end
-		2'b11: begin
-			msg_buf_in = {5'b0, x_max_red, 5'b0, y_max_red}; //Bottom right coordinate
-			msg_buf_wr = 1'b1;
-		end
-	endcase
+reg [1:0] color_sel;
+
+always @(*) begin
+    case(msg_state)
+        2'b00: begin
+            msg_buf_in = 32'b0;
+            msg_buf_wr = 1'b0;
+        end
+        2'b01: begin
+            case (color_sel)
+                2'b00: msg_buf_in = `RED_BOX_MSG_ID_BOX_MSG_ID;    // Red message ID
+                2'b01: msg_buf_in = `BLUE_BOX_MSG_ID_BOX_MSG_ID;   // Blue message ID
+                2'b10: msg_buf_in = `YELLOW_BOX_MSG_ID_BOX_MSG_ID; // Yellow message ID
+                2'b11: msg_buf_in = `WHITE_BOX_MSG_ID_BOX_MSG_ID;  // White message ID
+            endcase
+            msg_buf_wr = 1'b1;
+        end
+        2'b10: begin
+            case (color_sel)
+                2'b00: msg_buf_in = {5'b0, x_min_red, 5'b0, y_min_red};      // Red coordinates
+                2'b01: msg_buf_in = {5'b0, x_min_blue, 5'b0, y_min_blue};    // Blue coordinates
+                2'b10: msg_buf_in = {5'b0, x_min_yellow, 5'b0, y_min_yellow};// Yellow coordinates
+                2'b11: msg_buf_in = {5'b0, x_min_white, 5'b0, y_min_white};  // White coordinates
+            endcase
+            msg_buf_wr = 1'b1;
+        end
+        2'b11: begin
+            case (color_sel)
+                2'b00: msg_buf_in = {5'b0, x_max_red, 5'b0, y_max_red};      // Red coordinates
+                2'b01: msg_buf_in = {5'b0, x_max_blue, 5'b0, y_max_blue};    // Blue coordinates
+                2'b10: msg_buf_in = {5'b0, x_max_yellow, 5'b0, y_max_yellow};// Yellow coordinates
+                2'b11: msg_buf_in = {5'b0, x_max_white, 5'b0, y_max_white};  // White coordinates
+            endcase
+            msg_buf_wr = 1'b1;
+        end
+    endcase
 end
+
+
+
+
+
+// add similiar logic as above to write blue, yellow, and white bounding boxes
+
+
+
+// add FSM logic to send coordinate data
 
 
 //Output message FIFO
