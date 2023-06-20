@@ -11,6 +11,6 @@
 
 ### LED Driver system 
 [LED drivers](https://github.com/hk221/S.P.E.D/assets/108066429/7fc3eed3-2baf-4b85-a014-3c5c9babbcb7)
-As the the supply voltage is increased to the beacon it maintains the same brightness as the led driver and buck smps is working effectively.
+As the the supply voltage is increased to the beacon, it maintains the same brightness as the led driver, and the buck SMPs are working effectively.
 
 ### 
