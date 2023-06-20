@@ -16,3 +16,10 @@ These screenshots show that the FPGA connects to the server and sends the coordi
 [LED drivers](https://github.com/hk221/S.P.E.D/assets/108066429/7fc3eed3-2baf-4b85-a014-3c5c9babbcb7)
 As the the supply voltage is increased to the beacon, it maintains the same brightness as the led driver, and the buck SMPs are working effectively.
 
+### Server
+
+https://github.com/hk221/S.P.E.D/assets/108066429/d2c59021-5440-4f85-b4ac-bbce0e7e6fe7
+
+As you can see the server and client are in sync. 
+
+
