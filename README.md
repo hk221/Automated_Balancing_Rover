@@ -9,7 +9,7 @@
 ![WhatsApp Image 2023-06-20 at 23 17 35](https://github.com/hk221/S.P.E.D/assets/108066429/33a5ac51-6e78-4374-b419-6771d91e09e0)
 ![WhatsApp Image 2023-06-20 at 23 18 49](https://github.com/hk221/S.P.E.D/assets/108066429/46fdf77a-d9b1-4014-9739-d46fb1b1bda9)
 ![WhatsApp Image 2023-06-20 at 23 19 39](https://github.com/hk221/S.P.E.D/assets/108066429/cfce556b-3e76-485f-af48-5b02a7de7c86)
-
+These screenshots show that the FPGA connects to the server and sends the coordinates of the bounding box around red to the server. 
 ### Rover movement using LDRs 
 
 ### LED Driver system 
