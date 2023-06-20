@@ -1,6 +1,12 @@
 # S.P.E.D
  
-#Video evidence
+## Video evidence
 
-###Control system
+### Control system
 [Balancing Rover](https://github.com/hk221/S.P.E.D/assets/108066429/c2c3077b-6e9a-467b-8616-38a4b5b32b74)
+
+### Camera image detection beacon lights
+
+### Rover movement using LDRs 
+
+### LED Driver system 
