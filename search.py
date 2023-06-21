@@ -89,7 +89,7 @@ def update_path(current_pos, next_pos, path):
 # Main program
 def main():
     # Initialize the walls array
-    walls = np.zeros((maze_height, maze_width), dtype=bool)
+   # walls = np.zeros((maze_height, maze_width), dtype=bool)
 
     # Run Dijkstra's algorithm
     distances, previous = dijkstra(walls, start_position, goal_position)
@@ -97,11 +97,12 @@ def main():
     # Determine the shortest path
     path = []
     current_pos = goal_position
+    path.append(start_position)
     while current_pos != start_position:
         path.append(current_pos)
         current_pos = previous[current_pos]
-    path.append(start_position)
-    path.reverse()
+    #path.append(start_position)
+    #path.reverse()
 
     # Execute the movements based on the shortest path
     for i in range(len(path)-1):
