@@ -100,6 +100,7 @@ assign black_detect = ~(red_detect | blue_detect | yellow_detect | white_detect)
 
 // Find boundary of cursor box
 
+
 // Highlight detected areas
 wire [23:0] red_high, blue_high, yellow_high, white_high, black_high;
 assign grey = green[7:1] + red[7:2] + blue[7:2]; //Grey = green/2 + red/4 + blue/4
@@ -202,7 +203,7 @@ always @(posedge clk) begin
 end
 
 //Process bounding box at the end of the frame.
-reg [1:0] msg_state;
+reg [2:0] msg_state;
 reg [10:0] left_red, right_red, top_red, bottom_red, left_blue, right_blue, top_blue, bottom_blue, left_yellow, right_yellow, top_yellow, bottom_yellow, left_white, right_white, top_white, bottom_white;
 reg [7:0] frame_count;
 always @(posedge clk) begin
@@ -237,7 +238,7 @@ always @(posedge clk) begin
 		//Start message writer FSM once every MSG_INTERVAL frames, if there is room in the FIFO
 		frame_count <= frame_count - 1;
 		
-		if (frame_count == 0 && msg_buf_size < MESSAGE_BUF_MAX - 3) begin
+		if (frame_count == 0 && msg_buf_size < MESSAGE_BUF_MAX - 3) begin // CHANGE THE CONDITION TO START BASED ON BUFF SIZE
 			msg_state <= 2'b01;
 			frame_count <= MSG_INTERVAL-1;
 		end
@@ -256,46 +257,71 @@ wire msg_buf_rd, msg_buf_flush;
 wire [7:0] msg_buf_size;
 wire msg_buf_empty;
 
-`define RED_BOX_MSG_ID_BOX_MSG_ID 32'h00000001
-`define BLUE_BOX_MSG_ID_BOX_MSG_ID 32'h00000002
-`define YELLOW_BOX_MSG_ID_BOX_MSG_ID 32'h00000003
-`define WHITE_BOX_MSG_ID_BOX_MSG_ID 32'h00000004
+// `define RED_BOX_MSG_ID_BOX_MSG_ID 32'h00000001
+// `define BLUE_BOX_MSG_ID_BOX_MSG_ID 32'h00000002
+// `define YELLOW_BOX_MSG_ID_BOX_MSG_ID 32'h00000003
+// `define WHITE_BOX_MSG_ID_BOX_MSG_ID 32'h00000004
 
-reg [1:0] color_sel;
+reg [2:0] color_sel;
 
 always @(*) begin
+    color_sel = {red_high, blue_high, yellow_high};
+    // Color Select:
+    // 000: no  colour
+    // 001: only yellow
+    // 010: only blue
+    // 011: blue & yellow
+    // 100: only red
+    // 101: red  & yellow
+    // 110: red  & blue
+    // 111: red  & blue & yellow
     case(msg_state)
-        2'b00: begin
+	    // DONT USE IF STATEMENT IN COLOUR CASES AND SEND ALL INFO TO KEEP
+	    // BUFFER SIZE CONSISTENT IF NEEDED
+        3'b000: begin
             msg_buf_in = 32'b0;
             msg_buf_wr = 1'b0;
         end
-        2'b01: begin
-            case (color_sel)
-                2'b00: msg_buf_in = `RED_BOX_MSG_ID_BOX_MSG_ID;    // Red message ID
-                2'b01: msg_buf_in = `BLUE_BOX_MSG_ID_BOX_MSG_ID;   // Blue message ID
-                2'b10: msg_buf_in = `YELLOW_BOX_MSG_ID_BOX_MSG_ID; // Yellow message ID
-                2'b11: msg_buf_in = `WHITE_BOX_MSG_ID_BOX_MSG_ID;  // White message ID
-            endcase
+        3'b001: begin
+	    msg_buf_in = {29'b0, color_sel}; 				        // Red message ID
             msg_buf_wr = 1'b1;
         end
-        2'b10: begin
-            case (color_sel)
-                2'b00: msg_buf_in = {5'b0, x_min_red, 5'b0, y_min_red};      // Red coordinates
-                2'b01: msg_buf_in = {5'b0, x_min_blue, 5'b0, y_min_blue};    // Blue coordinates
-                2'b10: msg_buf_in = {5'b0, x_min_yellow, 5'b0, y_min_yellow};// Yellow coordinates
-                2'b11: msg_buf_in = {5'b0, x_min_white, 5'b0, y_min_white};  // White coordinates
-            endcase
-            msg_buf_wr = 1'b1;
-        end
-        2'b11: begin
-            case (color_sel)
-                2'b00: msg_buf_in = {5'b0, x_max_red, 5'b0, y_max_red};      // Red coordinates
-                2'b01: msg_buf_in = {5'b0, x_max_blue, 5'b0, y_max_blue};    // Blue coordinates
-                2'b10: msg_buf_in = {5'b0, x_max_yellow, 5'b0, y_max_yellow};// Yellow coordinates
-                2'b11: msg_buf_in = {5'b0, x_max_white, 5'b0, y_max_white};  // White coordinates
-            endcase
-            msg_buf_wr = 1'b1;
-        end
+        3'b010: begin
+	   
+                msg_buf_in = {5'b0, x_min_red, 5'b0, y_min_red};        // Red coordinates
+		msg_buf_wr = 1'b1;
+	    end
+        
+        3'b011: begin
+	    
+                msg_buf_in = {5'b0, x_max_red, 5'b0, y_max_red};        // Red coordinates
+		msg_buf_wr = 1'b1;
+	    end
+        
+        3'b100: begin
+	    
+                msg_buf_in = {5'b0, x_min_blue, 5'b0, y_min_blue};      // Blue coordinates
+		msg_buf_wr = 1'b1;
+	    end
+        
+        3'b101: begin
+	    
+                msg_buf_in = {5'b0, x_max_blue, 5'b0, y_max_blue};      // Blue coordinates
+		msg_buf_wr = 1'b1;
+	    end
+        
+        3'b110: begin
+	    
+                msg_buf_in = {5'b0, x_min_yellow, 5'b0, y_min_yellow};  // Yellow coordinates
+		msg_buf_wr = 1'b1;
+	    end
+        
+        3'b111: begin
+	    
+                msg_buf_in = {5'b0, x_max_yellow, 5'b0, y_max_yellow};  // Yellow coordinates
+		msg_buf_wr = 1'b1;
+	    end
+        
     endcase
 end
 
