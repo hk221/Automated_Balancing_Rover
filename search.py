@@ -1,15 +1,10 @@
 import socket
 import time
 from heapq import heappop, heappush
+import numpy as np
 import asyncio
 import websockets
 
-async def read_from_websocket():
-    async with websockets.connect('ws://localhost:8765') as websocket: # Replace with your WebSocket server URL
-        while True:
-            response = await websocket.recv()
-            # Process the received message
-            #print(decision)  # Example: Print the received message
 # Socket communication setup
 server_address = 'localhost'  # Change to the appropriate server address
 server_port = 1234  # Change to the appropriate server port
@@ -27,20 +22,57 @@ goal_position = (maze_height-1, maze_width-1)
 # Initialize the walls array
 walls = np.zeros((maze_height, maze_width), dtype=bool)
 
+async def read_from_websocket():
+    async with websockets.connect('ws://localhost:8765') as websocket:  # Replace with your WebSocket server URL
+        while True:
+            message = await websocket.recv()
+            # Process the received message
+            print(message)  # Example: Print the received message
 # Motor control functions
 # Define your motor control functions here based on the Arduino code
+
+# Backtracking functions
+def has_unvisited_neighbors(position):
+    row, col = position
+    neighbors = []
+
+    if row > 0 and not walls[row-1, col]:
+        neighbors.append((row-1, col))
+    if row < maze_height-1 and not walls[row+1, col]:
+        neighbors.append((row+1, col))
+    if col > 0 and not walls[row, col-1]:
+        neighbors.append((row, col-1))
+    if col < maze_width-1 and not walls[row, col+1]:
+        neighbors.append((row, col+1))
+
+    return len(neighbors) > 0
+
+def choose_unvisited_neighbor(position):
+    row, col = position
+    neighbors = []
+
+    if row > 0 and not walls[row-1, col]:
+        neighbors.append((row-1, col))
+    if row < maze_height-1 and not walls[row+1, col]:
+        neighbors.append((row+1, col))
+    if col > 0 and not walls[row, col-1]:
+        neighbors.append((row, col-1))
+    if col < maze_width-1 and not walls[row, col+1]:
+        neighbors.append((row, col+1))
+
+    return neighbors[0]  # Choose the first unvisited neighbor (you can implement a different strategy)
 
 # Dijkstra's algorithm for path finding
 def dijkstra(maze, start, goal):
     # Implementation of Dijkstra's algorithm here
     # Calculate the shortest path from start to end
     # Return a list of nodes representing the shortest path
-    rows, cols = maze.shape #gives rows and column size of matrix
+    rows, cols = maze.shape
     distances = np.full((rows, cols), np.inf)
     distances[start] = 0
     previous = np.empty((rows, cols), dtype=object)
     queue = [(0, start)]
-    
+
     while queue:
         current_dist, current_pos = heappop(queue)
 
@@ -60,9 +92,7 @@ def dijkstra(maze, start, goal):
 
     return distances, previous
 
-
 def get_neighbors(position):
-
     row, col = position
     neighbors = []
 
@@ -76,7 +106,14 @@ def get_neighbors(position):
         neighbors.append((row, col+1))
 
     return neighbors
+def backtrack(current_pos, stack):
+    if not has_unvisited_neighbors(current_pos):
+        # Dead end, backtrack
+        while not has_unvisited_neighbors(current_pos):
+            current_pos = stack.pop()
 
+    next_pos = choose_unvisited_neighbor(current_pos)
+    stack.append(current_pos)
 def get_current_coordinates():
     # Implement your function to get the current coordinates of the rover
     # Replace this with your actual implementation
@@ -108,13 +145,12 @@ def main():
         path.append(current_pos)
         current_pos = previous[current_pos]
     path.append(start_position)
-    path.reverse()
-
-    # Execute the movements based on the shortest path
+     # Execute the movements based on the shortest path
+    stack = []
+    decision_array = []  # Initialize the decision arra
     for i in range(len(path)-1):
         current_pos = path[i]
         next_pos = path[i+1]
-        
         #define decision
         response=read_from_websocket()
         # Get the current and next coordinates
@@ -172,8 +208,11 @@ def main():
             walls[row+1, col+1] = True
             walls[row, col+1] = True
             walls[row, col-1] = True
+        if bits & 0b1101:
+            backtrack(current_pos,stack)
 
-        
+        if bits & 0b1111:
+            backtrack(current_pos, stack)
         # Determine the movement commands based on the determined direction and sensor readings
         if current_pos[0] < next_pos[0]:
         # Move forward
@@ -221,11 +260,11 @@ def main():
             #sock.sendall(b'get_led_walls\n')            
             # Use the sensor readings to update the walls array dynamically
             
-        sock.sendall(decision.encode())
-        
-        time.sleep(1)  # Add a delay to allow the robot to complete the movement
+            sock.sendall(decision.encode())
+            time.sleep(1)  # Add a delay to allow the robot to complete the movement
+            update_path(current_pos, next_pos, path)
+            decision_array.append(decision)  # Append the decision to the decision array
 
-        update_path(current_pos, next_pos, path)
 
     # Close the socket connection
     sock.close()
