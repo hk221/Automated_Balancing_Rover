@@ -11,7 +11,7 @@
 ![WhatsApp Image 2023-06-20 at 23 19 39](https://github.com/hk221/S.P.E.D/assets/108066429/cfce556b-3e76-485f-af48-5b02a7de7c86)
 These screenshots show that the FPGA connects to the server and sends the coordinates of the bounding box around red to the server. 
 ### Rover movement using LDRs 
-https://github.com/hk221/S.P.E.D/assets/108066429/e9cd6699-40c0-484c-8ba3-f20a3b137142
+https://github.com/hk221/S.P.E.D/assets/108066429/51ca0b70-8417-4de5-b536-bd43c474f318
 ### LED Driver system 
 [LED drivers](https://github.com/hk221/S.P.E.D/assets/108066429/7fc3eed3-2baf-4b85-a014-3c5c9babbcb7)
 As the the supply voltage is increased to the beacon, it maintains the same brightness as the led driver, and the buck SMPs are working effectively.
