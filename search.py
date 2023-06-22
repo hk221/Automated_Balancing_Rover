@@ -76,11 +76,6 @@ def get_current_coordinates():
     # Replace this with your actual implementation
     return 0, 0
 
-def get_next_coordinates(next_pos):
-    # Implement your function to get the coordinates for the next position
-    # based on the next_pos value
-    # Replace this with your actual implementation
-    return 0, 0
 
 def update_path(current_pos, next_pos, path):
     # Update the path with the current position and the next position
@@ -113,7 +108,6 @@ def main():
         response=read_from_websocket()
         # Get the current and next coordinates
         current_coordinates = get_current_coordinates()
-        next_coordinates = get_next_coordinates(next_pos)
         
         # Process the sensor readings to update the walls array
         # this part is just to update the walls- not to do with decision!!
