@@ -1,16 +1,17 @@
 import socket
 import time
-from heapq import heappop, heappush
 import asyncio
 import websockets
 import numpy as np
+from collections import deque
 
 async def read_from_websocket():
     async with websockets.connect('ws://localhost:8765') as websocket: # Replace with your WebSocket server URL
         while True:
             response = await websocket.recv()
             # Process the received message
-            #print(decision)  # Example: Print the received message
+            #print(response)  # Example: Print the received message
+            
 # Socket communication setup
 server_address = 'localhost'  # Change to the appropriate server address
 server_port = 1234  # Change to the appropriate server port
@@ -23,7 +24,7 @@ maze_height = 360
 
 # start and goal position
 start_position = (0, 0)
-goal_position = (maze_height-1, maze_width-1)
+goal_position = (maze_width-1, maze_height-1)
 
 # Initialize the walls array
 walls = np.zeros((maze_height, maze_width), dtype=bool)
@@ -31,35 +32,27 @@ walls = np.zeros((maze_height, maze_width), dtype=bool)
 # Motor control functions
 # Define your motor control functions here based on the Arduino code
 
-# Dijkstra's algorithm for path finding
-def dijkstra(maze, start, goal):
-    # Implementation of Dijkstra's algorithm here
-    # Calculate the shortest path from start to end
-    # Return a list of nodes representing the shortest path
-    rows, cols = maze.shape #gives rows and column size of matrix
-    distances = np.full((rows, cols), np.inf)
-    distances[start] = 0
-    previous = np.empty((rows, cols), dtype=object)
-    queue = [(0, start)]
-    
+# Breadth-First Search for maze exploration
+def bfs(maze, start, goal):
+    rows, cols = maze.shape
+    visited = np.zeros((rows, cols), dtype=bool)
+    queue = deque([(start, [])])
+
     while queue:
-        current_dist, current_pos = heappop(queue)
+        current_pos, path = queue.popleft()
 
         if current_pos == goal:
-            return distances, previous
+            return path
 
-        if current_dist > distances[current_pos]:
+        if visited[current_pos]:
             continue
 
+        visited[current_pos] = True
+
         for neighbor in get_neighbors(current_pos):
-            new_dist = current_dist + 1  # Assume unit cost for each step
+            queue.append((neighbor, path + [neighbor]))
 
-            if new_dist < distances[neighbor]:
-                distances[neighbor] = new_dist
-                previous[neighbor] = current_pos
-                heappush(queue, (new_dist, neighbor))
-
-    return distances, previous
+    return None
 
 
 def get_neighbors(position):
@@ -97,15 +90,15 @@ def update_path(current_pos, next_pos, path):
 
 # Main program
 def main():
-   
+
     # Run Dijkstra's algorithm
-    distances, previous = dijkstra(walls, start_position, goal_position)
+    distances, previous = bfs(walls, start_position, goal_position)
 
     # Determine the shortest path
     path = []
     current_pos = goal_position
     path.append(start_position)
-    while current_pos != start_position:
+    while current_pos != goal_position:
         path.append(current_pos)
         current_pos = previous[current_pos]
     path.append(start_position)
@@ -127,57 +120,56 @@ def main():
         bits = int(response, 2)
         row, col = current_pos
         if bits == 0b0000:
-        # No LED walls detected, handle this case
-        # For example, you can skip updating the walls array for the current position
+            # No LED walls detected, handle this case
+            # For example, you can skip updating the walls array for the current position
             pass
         else:
             if bits & 0b0001:
                 # Wall detected in the front
-                walls[row-1, col] = True
+                walls[row+1, col] = True  # Update the row below
             if bits & 0b0010:
                 # Wall detected at the back
-                walls[row+1, col] = True
+                walls[row-1, col] = True  # Update the row above
             if bits & 0b0100:
                 # Wall detected on the right
-                walls[row, col+1] = True
+                walls[row, col+1] = True  # Update the column to the right
             if bits & 0b1000:
                 # Wall detected on the left
-                walls[row, col-1] = True
+                walls[row, col-1] = True  # Update the column to the left
             if bits & 0b0101:
                 # Walls detected at the front and right
-                walls[row-1, col+1] = True
+                walls[row+1, col+1] = True  # Update the row below and the column to the right
             if bits & 0b1010:
                 # Walls detected at the back and left
-                walls[row+1, col-1] = True
+                walls[row-1, col-1] = True  # Update the row above and the column to the left
             if bits & 0b0110:
                 # Walls detected at the right and left
-                walls[row, col+1] = True
-                walls[row, col-1] = True
+                walls[row, col+1] = True  # Update the column to the right
+                walls[row, col-1] = True  # Update the column to the left
             if bits & 0b1001:
                 # Walls detected at the front and left
-                walls[row-1, col-1] = True
+                walls[row+1, col-1] = True  # Update the row below and the column to the left
             if bits & 0b0111:
                 # Walls detected at the front, right, and left
-                walls[row-1, col+1] = True
-                walls[row, col-1] = True
+                walls[row+1, col+1] = True  # Update the row below and the column to the right
+                walls[row, col-1] = True  # Update the column to the left
             if bits & 0b1011:
                 # Walls detected at the back, right, and left
-                walls[row+1, col+1] = True
-                walls[row, col-1] = True
+                walls[row-1, col+1] = True  # Update the row above and the column to the right
+                walls[row, col-1] = True  # Update the column to the left
             if bits & 0b1101:
                 # Walls detected at the front, back, and left
-                walls[row-1, col-1] = True
-                walls[row+1, col-1] = True
+                walls[row+1, col-1] = True  # Update the row below and the column to the left
+                walls[row-1, col-1] = True  # Update the row above and the column to the left
             if bits & 0b1110:
                 # Walls detected at the front, back, and right
-                walls[row-1, col+1] = True
-                walls[row+1, col+1] = True
+                walls[row+1, col+1] = True  # Update the row below and the column to the right
+                walls[row-1, col+1] = True  # Update the row above and the column to the right
             if bits & 0b1111:
                 # Walls detected in all four directions
-                walls[row-1, col-1] = True
-                walls[row+1, col+1] = True
+                walls[row+1, col] = True  # Update the row below
+                walls[row-1, col] = True  # Update the row above
                 walls[row, col+1] = True
-                walls[row, col-1] = True
 
         
         # Determine the movement commands based on the determined direction and sensor readings
@@ -186,51 +178,52 @@ def main():
             if bits == 0b0000:
                 # No LED walls detected, handle this case
                 decision = "move_forward()"
-            elif walls[current_pos[0]-1, current_pos[1]] and walls[current_pos[0], current_pos[1]-1]:
+            elif walls[current_pos[0]+1, current_pos[1]] and walls[current_pos[0], current_pos[1]-1]:
                 # Wall on the left and front, turn right
-                decision= "turn_right()"
-            elif walls[current_pos[0]-1, current_pos[1]]:
+                decision = "turn_right()"
+            elif walls[current_pos[0]+1, current_pos[1]]:
                 # Wall in front, turn left
-                decision= "turn_left()"
+                decision = "turn_left()"
             elif walls[current_pos[0], current_pos[1]-1]:
                 # Wall on the left, turn right
-                decision= "turn_right()"
+                decision = "turn_right()"
             else:
-                decision= "move_forward()"
+                decision = "move_forward()"
 
         elif current_pos[1] < next_pos[1]:
-        # Turn right
+            # Turn right
             if bits == 0b0000:
                 # No LED walls detected, handle this case
                 decision = "move_forward()"
-            elif walls[current_pos[0]-1, current_pos[1]] and walls[current_pos[0]+1, current_pos[1]]:
+            elif walls[current_pos[0]+1, current_pos[1]] and walls[current_pos[0]-1, current_pos[1]]:
                 # Wall in front and back, turn back
-                decision= "move_back()"
-            elif walls[current_pos[0]-1, current_pos[1]]:
-                # Wall in front, turn left
-                decision= "turn_left()"
+                decision = "move_back()"
             elif walls[current_pos[0]+1, current_pos[1]]:
+                # Wall in front, turn left
+                decision = "turn_left()"
+            elif walls[current_pos[0]-1, current_pos[1]]:
                 # Wall at the back, turn right
-                decision= "turn_right()"
+                decision = "turn_right()"
             else:
-                decision= "turn_right()"
+                decision = "turn_right()"
 
         elif current_pos[1] > next_pos[1]:
-        # Turn left
+            # Turn left
             if bits == 0b0000:
                 # No LED walls detected, handle this case
                 decision = "move_forward()"
-            elif walls[current_pos[0]-1, current_pos[1]] and walls[current_pos[0]+1, current_pos[1]]:
+            elif walls[current_pos[0]+1, current_pos[1]] and walls[current_pos[0]-1, current_pos[1]]:
                 # Wall in front and back, turn back
-                decision= "move_back()"
-            elif walls[current_pos[0]-1, current_pos[1]]:
-                # Wall in front, turn right
-                decision= "turn_right()"
+                decision = "move_back()"
             elif walls[current_pos[0]+1, current_pos[1]]:
+                # Wall in front, turn right
+                decision = "turn_right()"
+            elif walls[current_pos[0]-1, current_pos[1]]:
                 # Wall at the back, turn left
-                decision= "turn_left()"
+                decision = "turn_left()"
             else:
-                decision= "turn_left()"
+                decision = "turn_left()"
+
 
             # Determine the movement direction based on sensor readings from Arduino
             #sock.sendall(b'get_led_walls\n')            
