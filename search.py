@@ -119,20 +119,25 @@ def main():
             pass
         else:
             if bits & 0b0001:
-                # Wall detected in the front
+                # Wall detected in the front right
                 walls[row+1, col] = True  # Update the row below
+                
             if bits & 0b0010:
-                # Wall detected at the back
+                # Wall detected at the front left
                 walls[row-1, col] = True  # Update the row above
+                
             if bits & 0b0100:
                 # Wall detected on the right
                 walls[row, col+1] = True  # Update the column to the right
+                
             if bits & 0b1000:
                 # Wall detected on the left
                 walls[row, col-1] = True  # Update the column to the left
+                
             if bits & 0b0101:
-                # Walls detected at the front and right
+                # Walls detected at the front right and right
                 walls[row+1, col+1] = True  # Update the row below and the column to the right
+                
             if bits & 0b1010:
                 # Walls detected at the back and left
                 walls[row-1, col-1] = True  # Update the row above and the column to the left

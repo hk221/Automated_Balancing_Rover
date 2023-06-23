@@ -1,9 +1,15 @@
 #include <AFMotor.h>
 #include <opencv2/opencv.hpp>
+#include <Servo.h>
 
 // Define motor pins
-#define MOTOR_LEFT_PIN 1
-#define MOTOR_RIGHT_PIN 2
+#define dirPin 12
+#define stepPin 14
+#define dirPin2 27
+#define stepPin2 26
+#define stepsPerRevolution 200
+#include <math.h>
+#include <SPI.h>
 
 // Define maze dimensions
 #define MAZE_WIDTH 2.8
