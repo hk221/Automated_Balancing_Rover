@@ -54,6 +54,21 @@ def bfs(maze, start, goal):
 
     return None
 
+def backtracking():
+    if bits == 0b1101:
+        # Walls detected at the front, right, and left
+        for i in range :
+            if decision[i] == "turn_left":
+                return "turn_right"
+            elif decision[i] == "turn_right":
+                return "turn_left"
+            elif decision[i] == "move_forward":
+                return "move_back"
+            elif decision[i] == "move_back":
+                return "move_forward"
+            
+        return True
+
 
 def get_neighbors(position):
 
@@ -91,6 +106,7 @@ def main():
 
     # Determine the shortest path
     path = []
+    decisionarray = []
     current_pos = goal_position
     path.append(start_position)
     while current_pos != goal_position:
@@ -172,6 +188,8 @@ def main():
             if bits == 0b0000:
                 # No LED walls detected, handle this case
                 decision = "move_forward()"
+            elif bits == 0b1101 or bits == 0b1111:
+                backtracking ()
             elif walls[current_pos[0]+1, current_pos[1]] and walls[current_pos[0], current_pos[1]-1]:
                 # Wall on the left and front, turn right
                 decision = "turn_right()"
@@ -189,6 +207,8 @@ def main():
             if bits == 0b0000:
                 # No LED walls detected, handle this case
                 decision = "move_forward()"
+            elif bits == 0b1101 or bits == 0b1111:
+                backtracking()
             elif walls[current_pos[0]+1, current_pos[1]] and walls[current_pos[0]-1, current_pos[1]]:
                 # Wall in front and back, turn back
                 decision = "move_back()"
@@ -206,6 +226,8 @@ def main():
             if bits == 0b0000:
                 # No LED walls detected, handle this case
                 decision = "move_forward()"
+            elif bits == 0b1101 or bits == 0b1111:
+                backtracking()
             elif walls[current_pos[0]+1, current_pos[1]] and walls[current_pos[0]-1, current_pos[1]]:
                 # Wall in front and back, turn back
                 decision = "move_back()"
@@ -224,7 +246,7 @@ def main():
             # Use the sensor readings to update the walls array dynamically
             
         sock.sendall(decision.encode())
-        
+        decisionarray.append(decision)
         time.sleep(1)  # Add a delay to allow the robot to complete the movement
 
         update_path(current_pos, next_pos, path)
@@ -232,5 +254,5 @@ def main():
     # Close the socket connection
     sock.close()
 
-if __name__ == '__main__':
+if _name_ == '_main_':
     main()
