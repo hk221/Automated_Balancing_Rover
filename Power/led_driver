@@ -1,0 +1,83 @@
+from machine import Pin, ADC, PWM
+import machine
+import utime
+
+led_onboard = machine.Pin("LED", machine.Pin.OUT)
+
+vret_pin = ADC(Pin(26))
+vout_pin = ADC(Pin(28))
+vin_pin = ADC(Pin(27))
+pwm = PWM(Pin(0))
+pwm.freq(100000)
+pwm_en = Pin(1, Pin.OUT)
+
+count = 0
+pwm_out = 0
+pwm_ref = 0
+setpoint_current = 0.12  # Output current setpoint in amps
+current_limit = 0.25  # Current limit in amps
+
+# PID controller parameters
+kp = 0.1
+ki = 10
+kd = 0.05
+integral = 0
+prev_error = 0
+
+def adc_to_voltage(adc_value):
+    voltage_range = 3.3  # ADC reference voltage
+    max_adc_value = 65535  # Maximum ADC reading
+    voltage1 = (adc_value / max_adc_value) * voltage_range
+    voltage2 = voltage1 / 0.2
+    return voltage2
+
+def adc_to_current(adc_value):
+    current_range = 3.3  # ADC reference voltage
+    max_adc_value = 65535  # Maximum ADC reading
+    sense_resistor = 1.02  # Value of sense resistor in ohms
+    current = (adc_value / max_adc_value) * (current_range / sense_resistor)
+    return current
+
+def saturate(duty):
+    duty = int(duty)  # Convert duty to integer
+    if duty > 62500:
+        duty = 62500
+    if duty < 100:
+        duty = 100
+    return duty
+
+while True:
+    pwm_en.value(1)
+
+    vin = adc_to_voltage(vin_pin.read_u16())
+    vout = adc_to_voltage(vout_pin.read_u16())
+    vret = adc_to_voltage(vret_pin.read_u16())
+    count = count + 1
+
+    output_current = adc_to_current(vret_pin.read_u16())
+
+    error = setpoint_current - output_current
+
+    # PID control
+    integral += error
+    derivative = error - prev_error
+    pwm_ref = kp * error + ki * integral + kd * derivative
+    prev_error = error
+
+    # Limit the output current
+    if output_current > current_limit:
+        pwm_ref -= kd
+
+    pwm_out = saturate(pwm_ref)
+    pwm.duty_u16(pwm_out)
+
+    if count > 2000:
+        print("Vin = {:.2f} V".format(vin))
+        print("Vout = {:.2f} V".format(vout))
+        print("Vret = {:.2f} V".format(vret))
+        print("Output Current = {:.2f} mA".format(output_current * 1000))
+        print("Duty = {:.0f}".format(pwm_out))
+        led_onboard.value(1)
+        count = 0
+    if count > 0:
+        led_onboard.value(0)

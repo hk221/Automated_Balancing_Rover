@@ -1,0 +1,218 @@
+#include <Arduino.h>
+#include <ArduinoJson.h>
+#include <WebSocketsClient.h>
+#include <WiFi.h>
+
+// Motor pins
+#define dirPin 12
+#define stepPin 14
+#define stepsPerRevolution 200
+
+#define dirPin2 26
+#define stepPin2 27
+WebSocketsClient webSocket;
+char ssid[] = "Dalling Road";
+char pass[] = "Panda123";
+
+// Server IP and Port
+const char* serverIP = "192.168.68.165";
+const int serverPort = 3000;
+WiFiClient wifi;
+
+// LDR pins
+const int analogPin1 = 35;  // GPIO 36 corresponds to analog input 0
+const int analogPin2 = 34;  // GPIO 39 corresponds to analog input 1
+const int analogPin3 = 32;  // GPIO 32 corresponds to analog input 2
+const int analogPin4 = 33;  // GPIO 33 corresponds to analog input 3
+const int analogPin5 = 25;  // GPIO 33 corresponds to analog input 3
+String lastReceivedMessage = "";
+
+void setup() {
+  Serial.begin(115200);
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print("Attempting to connect to SSID: ");
+    Serial.println(ssid);
+    WiFi.begin(ssid, pass);
+    delay(10000);
+  }
+  Serial.println("Connected to WiFi");
+  printWifiStatus();
+
+
+  // Configure motor pins as outputs
+  pinMode(dirPin, OUTPUT);
+  pinMode(stepPin, OUTPUT);
+  pinMode(dirPin2, OUTPUT);
+  pinMode(stepPin2, OUTPUT);
+  
+  // Configure LDR pins as inputs
+  pinMode(analogPin1, INPUT);
+  pinMode(analogPin2, INPUT);
+  pinMode(analogPin3, INPUT);
+  pinMode(analogPin4, INPUT);
+  pinMode(analogPin5, INPUT);
+
+}
+void printWifiStatus() {
+  Serial.print("SSID: ");
+  Serial.println(WiFi.SSID());
+  IPAddress ipAddress = WiFi.localIP();
+  Serial.print("IP Address: ");
+  Serial.println(ipAddress);
+  long rssi = WiFi.RSSI();
+  Serial.print("Signal strength (RSSI):");
+  Serial.print(rssi);
+  Serial.println(" dBm");
+}
+void loop() {
+
+  // Read voltage values from LDR pins
+  int value1 = analogRead(analogPin1);
+  int value2 = analogRead(analogPin2);
+  int value3 = analogRead(analogPin3);
+  int value4 = analogRead(analogPin4);
+  int value5 = analogRead(analogPin5);
+
+  // Set the corresponding bit to 1 if the analog value is higher than 2500
+  byte bits = 0; 
+  if (value1 > 1750) {//fr
+    bits |= 0b00001;
+  }
+  if (value2 > 1750) {//f
+    bits |= 0b00010;
+  }
+  if (value3 > 1750) {//fl
+    bits |= 0b00100;
+  }
+  if (value4 > 1750) {//r
+    bits |= 0b01000;
+  }
+  if (value5 > 1750) {//l
+    bits |= 0b10000;
+  }
+
+ // Print the 4-bit number to Serial Monitor
+  Serial.print("Analog Inputs: ");
+  Serial.println(bits, BIN);
+  // 0001 -> front ldr(bluepin35), 0010 -> back ldr (yellowpin34), 0100 ->right ldr(purplepin32), 1000 -> left ldr (orangepin33)
+  if (bits == 0b10110){
+    stopRover();
+    webSocket.sendTXT(bits);
+    //turn right at corner
+    turnRight();
+    Serial.print("if statemet moveback");
+  }
+  else if (bits == 0b01011){
+    //turn left at corner
+    stopRover();
+    webSocket.sendTXT(bits);
+    turnLeft();
+    Serial.print("if statemet moveback");
+  }
+  else if (bits == 0b1101 || bits == 0b1111){
+    webSocket.sendTXT(bits);
+    turnRight();
+    turnRight();
+    
+    //deadend -> server needs to tell esp to do opposite of recorded motor movements in branch 
+   Serial.print("else if statemet backldr");
+  }
+  else if (bits == 0b11000 || bits == 11101 || bits == 11100 || bits == 11001){
+      //left and right high -> go forward
+    webSocket.sendTXT(bits);
+    performStep();
+   Serial.print("if statemetright");
+  }
+  else if (bits == 0b1000 || bits== 0b0100 || bits == 0b0001 || bits == 0b0010 || bits == 0b0000){
+    //left or right high -> check server
+    //tell server theres a new node, ask which way to go
+    stopRover();
+    performStep();
+    //decipher string into raw function
+   Serial.print("if statemet leftldr");
+  }
+  else{
+    performStep();
+   Serial.print("no movement");
+  }
+  
+}
+
+void turnLeft(){
+  for(int i=0;i<50;i++){
+    digitalWrite(stepPin, HIGH);
+    digitalWrite(stepPin2, LOW);
+    delayMicroseconds(2000);
+    digitalWrite(stepPin, LOW);
+    digitalWrite(stepPin2, LOW);
+    delayMicroseconds(2000);
+  }
+}
+void turnRight(){
+  for(int i=0;i<50;i++){
+    digitalWrite(stepPin, LOW);
+    digitalWrite(stepPin2, HIGH);
+    delayMicroseconds(2000);
+    digitalWrite(stepPin, LOW);
+    digitalWrite(stepPin2, LOW);
+    delayMicroseconds(2000);
+  }
+}
+void performStep() {
+  //move forward
+  for(int i=0;i<50;i++){
+    digitalWrite(dirPin, LOW);
+    digitalWrite(dirPin2, LOW);
+    delayMicroseconds(2000);
+    digitalWrite(stepPin, HIGH);
+    digitalWrite(stepPin2, HIGH);
+    delayMicroseconds(2000);
+    digitalWrite(stepPin, LOW);
+    digitalWrite(stepPin2, LOW);
+    delayMicroseconds(2000);
+  }
+}
+void reverseStep(){
+  for(int i=0;i<50;i++){
+    digitalWrite(dirPin, HIGH);
+    digitalWrite(dirPin2, HIGH);
+    delayMicroseconds(2000);
+    digitalWrite(stepPin, HIGH);
+    digitalWrite(stepPin2, HIGH);
+    delayMicroseconds(2000);
+    digitalWrite(stepPin, LOW);
+    digitalWrite(stepPin2, LOW);
+    delayMicroseconds(2000);
+  }
+}
+void stopRover(){
+  for(int i=0;i<50;i++){
+    digitalWrite(dirPin, LOW);
+    digitalWrite(dirPin2, LOW);
+    delayMicroseconds(2000);
+    digitalWrite(stepPin, LOW);
+    digitalWrite(stepPin2, LOW);
+    delayMicroseconds(2000);
+    digitalWrite(stepPin, LOW);
+    digitalWrite(stepPin2, LOW);
+    delayMicroseconds(2000);
+  }
+}
+
+void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
+  switch(type) {
+    case WStype_DISCONNECTED:
+      Serial.printf("[WSc] Disconnected!\n");
+      break;
+    case WStype_CONNECTED:
+      Serial.printf("[WSc] Connected to url: %s\n", payload);
+      break;
+    case WStype_TEXT:
+      lastReceivedMessage = String((char *)payload);
+      Serial.printf("[WSc] get text: %s\n", payload);
+      break;
+    case WStype_BIN:
+      Serial.printf("[WSc] get binary length: %u\n", length);
+      break;
+  }
+}

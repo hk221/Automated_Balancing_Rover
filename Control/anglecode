@@ -1,0 +1,170 @@
+#include <Adafruit_MPU6050.h>
+#include <Adafruit_Sensor.h>
+#include <Wire.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
+Adafruit_MPU6050 mpu;
+
+// FIR filter variables
+const int numTaps = 10;  // Number of filter taps
+float filterTaps[numTaps] = {0.04, 0.04, 0.04, 0.04, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08};
+float filterBuffer[numTaps];
+int filterIndex = 0;
+
+const float dt = 0.01;  // Time interval between readings (in seconds)
+float angle = 0.0;      // Current angle
+bool isInitialized = false;  // Flag to track initialization
+
+// Motor pins
+#define dirPin1 12
+#define stepPin1 14
+#define dirPin2 27
+#define stepPin2 26
+
+// Task handles
+TaskHandle_t gyroTaskHandle;
+TaskHandle_t motorTaskHandle;
+
+void setup() {
+  Serial.begin(115200);
+  Wire.begin();
+
+  if (!mpu.begin()) {
+    Serial.println("Failed to find MPU6050 chip");
+    while (1) {
+      delay(10);
+    }
+  }
+
+  pinMode(stepPin1, OUTPUT);
+  pinMode(dirPin1, OUTPUT);
+  pinMode(stepPin2, OUTPUT);
+  pinMode(dirPin2, OUTPUT);
+
+  // Create the tasks
+  xTaskCreatePinnedToCore(gyroTask, "Gyro Task", 10000, NULL, 1, &gyroTaskHandle, 0);
+  xTaskCreatePinnedToCore(motorTask, "Motor Task", 10000, NULL, 1, &motorTaskHandle, 1);
+}
+
+// Gyro task
+void gyroTask(void* parameter) {
+  unsigned long startTime = millis();  // Start time of the program
+
+  while (true) {
+    // Check if the initialization period has passed
+    if (millis() - startTime > 5000 && !isInitialized) {
+      angle = 0.0;  // Initialize the angle
+      isInitialized = true;  // Set the flag to true
+    }
+
+    sensors_event_t gyro;
+    mpu.getGyroSensor()->getEvent(&gyro);
+
+    // Update the filter buffer with the latest reading
+    filterBuffer[filterIndex] = gyro.gyro.y;
+    filterIndex = (filterIndex + 1) % numTaps;
+
+    // Apply the FIR filter
+    float filteredValue = 0.0;
+    for (int i = 0; i < numTaps; i++) {
+      filteredValue += filterTaps[i] * filterBuffer[(filterIndex + i) % numTaps];
+    }
+
+    // Integrate the filtered angular velocity to estimate the angle
+    angle += filteredValue * dt;
+
+    vTaskDelay(pdMS_TO_TICKS(10));  // Delay for 10 milliseconds
+  }
+}
+
+// PID controller variables
+float targetAngle = 0.0;    // Desired angle for balancing
+float Kp = 20;             // Proportional gain
+float Ki = 1;             // Integral gain
+float Kd = 0.1;               // Derivative gain
+float integralTerm = 0.0;   // Integral term for PID
+float prevError = 0.0;      // Previous error term for PID
+float pidOutput = 0.0;      // PID control signal
+
+// Motor task
+void motorTask(void* parameter) {
+  while (true) {
+    // Print the angle if the initialization period has passed
+    if (isInitialized) {
+      Serial.print("Angle: ");
+      Serial.println(angle);
+
+      // Calculate the error term for PID
+      float error = targetAngle - angle;
+
+      // Update the integral term for PID
+      integralTerm += error * dt;
+
+      // Calculate the derivative term for PID
+      float derivativeTerm = (error - prevError) / dt;
+
+      // Calculate the PID control signal
+      pidOutput = Kp * error + Ki * integralTerm + Kd * derivativeTerm;
+
+      // Update the previous error term
+      prevError = error;
+
+      // Determine the direction based on the PID control signal
+      if (pidOutput > 0) {
+        digitalWrite(dirPin1, HIGH);
+        digitalWrite(dirPin2, HIGH);
+        Serial.println("Moving forward");
+      } else if (pidOutput < 0) {
+        digitalWrite(dirPin1, LOW);
+        digitalWrite(dirPin2, LOW);
+        Serial.println("Moving backward");
+      } else {
+        // No movement
+        while (pidOutput == 0) {
+          digitalWrite(stepPin1, LOW);
+          digitalWrite(stepPin2, LOW);
+          delayMicroseconds(2000);
+
+          // You can add any additional conditions or break out of the loop if necessary
+        }
+        continue; // Skip the step generation code and go back to the beginning of the loop
+      }
+
+      // Toggle the step pins to generate step signals
+      digitalWrite(stepPin1, HIGH);
+      digitalWrite(stepPin2, HIGH);
+      delayMicroseconds(10);
+      digitalWrite(stepPin1, LOW);
+      digitalWrite(stepPin2, LOW);
+      delayMicroseconds(10);
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(10));  // Delay for 10 milliseconds
+  }
+}
+
+void printSensorValues() {
+  sensors_event_t a, g, temp;
+  mpu.getEvent(&a, &g, &temp);
+
+  Serial.print("Accelerometer (m/s^2): ");
+  Serial.print("X = ");
+  Serial.print(a.acceleration.x);
+  Serial.print(", Y = ");
+  Serial.print(a.acceleration.y);
+  Serial.print(", Z = ");
+  Serial.println(a.acceleration.z);
+
+  Serial.print("Gyroscope (deg/s): ");
+  Serial.print("X = ");
+  Serial.print(g.gyro.x);
+  Serial.print(", Y = ");
+  Serial.print(g.gyro.y);
+  Serial.print(", Z = ");
+  Serial.println(g.gyro.z);
+}
+
+void loop() {
+  // Empty loop
+}

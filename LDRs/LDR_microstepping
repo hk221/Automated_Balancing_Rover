@@ -1,0 +1,251 @@
+#include <Arduino.h>
+#include <ArduinoJson.h>
+#include <WebSocketsClient.h>
+#include <WiFi.h>
+#include <Wire.h>
+#include <Adafruit_MPU6050.h>
+#include <Adafruit_Sensor.h>
+
+#define dirPin1 14
+#define stepPin1 12
+#define dirPin2 26
+#define stepPin2 27
+#define PI 3.14159265
+#define stepArc 0.1025
+#define rAxil 7.1
+
+WebSocketsClient webSocket;
+char ssid[] = "96 Dalling Road";
+char pass[] = "Panda123";
+
+const char* serverIP = "192.168.68.165";
+const int serverPort = 3000;
+WiFiClient wifi;
+
+const int analogPin1 = 35;  // right
+const int analogPin2 = 34;  // front left
+const int analogPin3 = 32;  // front
+const int analogPin4 = 33;  // front right
+const int analogPin5 = 25;  // left
+
+struct CalibrationResult {
+  int lowestValue;
+  int lowestIndex;
+};
+
+void setup() {
+  Serial.begin(115200);
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print("Attempting to connect to SSID: ");
+    Serial.println(ssid);
+    WiFi.begin(ssid, pass);
+    delay(10000);
+  }
+  Serial.println("Connected to WiFi");
+  printWifiStatus();
+
+  webSocket.begin(serverIP, serverPort);
+  webSocket.onEvent(webSocketEvent);
+
+  pinMode(dirPin1, OUTPUT);
+  pinMode(stepPin1, OUTPUT);
+  pinMode(dirPin2, OUTPUT);
+  pinMode(stepPin2, OUTPUT);
+
+  pinMode(analogPin1, INPUT);
+  pinMode(analogPin2, INPUT);
+  pinMode(analogPin3, INPUT);
+  pinMode(analogPin4, INPUT);
+  pinMode(analogPin5, INPUT);
+}
+
+void loop() {
+  webSocket.loop();
+  int value1 = analogRead(analogPin1);
+  int value2 = analogRead(analogPin2);
+  int value3 = analogRead(analogPin3);
+  int value4 = analogRead(analogPin4);
+  int value5 = analogRead(analogPin5);
+
+  byte bits = 0;
+  if (value1 > 1750) {
+    bits |= 0b00001;
+  }
+  if (value2 > 1750) {
+    bits |= 0b00010;
+  }
+  if (value3 > 1750) {
+    bits |= 0b00100;
+  }
+  if (value4 > 1750) {
+    bits |= 0b01000;
+  }
+  if (value5 > 1750) {
+    bits |= 0b10000;
+  }
+
+  CalibrationResult result = calibrate();
+  int lowestValue = result.lowestValue;
+  int lowestIndex = result.lowestIndex;
+
+  if (lowestValue == value1) {
+    rotateMotorsSteer(lowestIndex);
+    rotateMotorsDrive(5);
+  } else if (lowestValue == value2) {
+    rotateMotorsSteer(lowestIndex);
+    rotateMotorsDrive(5);
+  } else if (lowestValue == value3) {
+    rotateMotorsSteer(lowestIndex);
+    rotateMotorsDrive(5);
+  } else if (lowestValue == value4) {
+    rotateMotorsSteer(lowestIndex);
+    rotateMotorsDrive(5);
+  } else if (lowestValue == value5) {
+    rotateMotorsSteer(lowestIndex);
+    rotateMotorsDrive(5);
+  }
+}
+
+void rotateMotorsSteer(double angle) {
+  double step_count_steer = (angle * 2 * PI * rAxil) / (360 * stepArc);
+  digitalWrite(dirPin1, HIGH);
+  digitalWrite(dirPin2, HIGH);
+  int i = 1;
+  while (i < step_count_steer) {
+    digitalWrite(stepPin1, HIGH);
+    digitalWrite(stepPin2, HIGH);
+    delayMicroseconds(3000);
+    digitalWrite(stepPin1, LOW);
+    digitalWrite(stepPin2, LOW);
+    delayMicroseconds(3000);
+    i++;
+  }
+}
+
+void rotateMotorsDrive(int distance) {
+  double step_count_drive = distance / stepArc;
+  digitalWrite(dirPin1, HIGH);
+  digitalWrite(dirPin2, HIGH);
+  int i = 1;
+  while (i < step_count_drive) {
+    digitalWrite(stepPin1, HIGH);
+    digitalWrite(stepPin2, HIGH);
+    delayMicroseconds(3000);
+    digitalWrite(stepPin1, LOW);
+    digitalWrite(stepPin2, LOW);
+    delayMicroseconds(3000);
+    i++;
+  }
+}
+
+CalibrationResult calibrate() {
+  CalibrationResult result;
+  result.lowestValue = 1750;
+  result.lowestIndex = 0;
+
+  int a = 0, b = 0, c = 0, d = 0, e = 0;
+  int v = 0, w = 0, x = 0, y = 0, z = 0;
+
+  for (int i = 1; i < 360; i++) {
+    rotateMotorsSteer(i);
+    int value1 = analogRead(analogPin1);
+    int value2 = analogRead(analogPin2);
+    int value3 = analogRead(analogPin3);
+    int value4 = analogRead(analogPin4);
+    int value5 = analogRead(analogPin5);
+
+    if (value1 < a) {
+      a = value1;
+      v = i;
+    }
+    if (value2 < b) {
+      b = value2;
+      w = i;
+    }
+    if (value3 < c) {
+      c = value3;
+      x = i;
+    }
+    if (value4 < d) {
+      d = value4;
+      y = i;
+    }
+    if (value5 < e) {
+      e = value5;
+      z = i;
+    }
+  }
+
+  if (a < result.lowestValue) {
+    result.lowestValue = a;
+    result.lowestIndex = v;
+  }
+  if (b < result.lowestValue) {
+    result.lowestValue = b;
+    result.lowestIndex = w;
+  }
+  if (c < result.lowestValue) {
+    result.lowestValue = c;
+    result.lowestIndex = x;
+  }
+  if (d < result.lowestValue) {
+    result.lowestValue = d;
+    result.lowestIndex = y;
+  }
+  if (e < result.lowestValue) {
+    result.lowestValue = e;
+    result.lowestIndex = z;
+  }
+
+  return result;
+}
+
+void printWifiStatus() {
+  Serial.print("SSID: ");
+  Serial.println(WiFi.SSID());
+  IPAddress ipAddress = WiFi.localIP();
+  Serial.print("IP Address: ");
+  Serial.println(ipAddress);
+  long rssi = WiFi.RSSI();
+  Serial.print("Signal strength (RSSI): ");
+  Serial.print(rssi);
+  Serial.println(" dBm");
+}
+
+void webSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
+  switch (type) {
+    case WStype_DISCONNECTED:
+      Serial.println("Disconnected from WebSocket server");
+      break;
+    case WStype_CONNECTED:
+      Serial.println("Connected to WebSocket server");
+      break;
+    case WStype_TEXT:
+      // Handle incoming text message
+      break;
+    case WStype_BIN:
+      // Handle incoming binary message
+      break;
+    case WStype_PING:
+      // Handle ping received
+      break;
+    case WStype_PONG:
+      // Handle pong received
+      break;
+    case WStype_ERROR:
+      // Handle error
+      break;
+    case WStype_FRAGMENT_TEXT_START:
+      // Handle the start of a fragmented text message
+      break;
+    case WStype_FRAGMENT_BIN_START:
+      // Handle the start of a fragmented binary message
+      break;
+    case WStype_FRAGMENT:
+      // Handle a fragment of a fragmented message
+      break;
+    case WStype_FRAGMENT_FIN:
+      // Handle the end of a fragmented message
+      break;
+  }
+}

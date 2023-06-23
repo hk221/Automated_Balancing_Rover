@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "*.y": "lex",
+        "*.flex": "lex",
+        "ldr_old": "cpp"
+    }
+}
