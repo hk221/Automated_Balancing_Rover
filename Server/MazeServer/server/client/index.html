@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>S.P.E.D Mapper</title>
+  <link rel = "stylesheet" href = "/client/assets/style.css">
+
+  </head>
+<body>
+
+
+<br>
+<div id = "canvas-container">
+<canvas id="ctx"></canvas>
+</div>
+<div><h3 id = "demotag">Demo Buttons</h3></div>
+<div class = "button-container">
+<button class = "button" onclick="MoveRelDirection('left', 40)">MoveLeft</button>
+<button class = "button" onclick="MoveBugRelative(5, 10)">MoveRight</button>
+<button class = "button" onclick="MoveRelDirection('forward', 40)">MoveForward</button>
+<button class = "button" onclick="MoveRelDirection('back', 40)">MoveBack</button>
+</div>
+<div class = "button-container">
+<button class= "button" onclick = "rotateBugRelative(10)">Rotate Clockwise</button>
+<button class= "button" onclick = "rotateBugRelative(-10)">Rotate AntiClockwise</button>
+</div>
+<div class = "button-container">
+<button class ="button" onclick='drawWall("front")'>Add Wall Front</button>
+<button class ="button" onclick='drawWall("right")'>Add Wall Right</button>
+<button class ="button" onclick='drawWall("behind")'>Add Wall Behind</button>
+<button class ="button" onclick='drawWall("left")'>Add Wall Left</button>
+</div>
+
+
+
+
+<script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+
+
+
+<script type ="text/javascript" src="/client/assets/maze.js"></script>
+
+</body>
+</html>
